@@ -1,0 +1,16 @@
+[Unit]
+Description=CBD Motion Lab Backend Service
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=leco
+WorkingDirectory=/home/leco/cbd
+ExecStart=/usr/bin/python3 /home/leco/cbd/run_server.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/leco/cbd/server.log
+StandardError=append:/home/leco/cbd/server.log
+
+[Install]
+WantedBy=multi-user.target

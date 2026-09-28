@@ -1,0 +1,16 @@
+services:
+  cbd-postgres:
+    image: postgres:16-alpine
+    container_name: cbd-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5440:5432"
+    environment:
+      POSTGRES_DB: cbd_motion
+      POSTGRES_USER: cbd_user
+      POSTGRES_PASSWORD: cbd_password_2026
+    volumes:
+      - cbd_pgdata:/var/lib/postgresql/data
+
+volumes:
+  cbd_pgdata:

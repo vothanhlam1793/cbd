@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Logs
+*.log
+server.log
+
+# Video / Uploads / Records Data (Gigabytes of videos)
+backend/data/uploads/
+backend/data/records/
+backend/data/*.mp4
+backend/data/*.jpg
+
+# Temp
+tmp/
+.cache/
+.DS_Store
