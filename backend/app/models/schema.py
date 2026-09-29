@@ -158,3 +158,23 @@ class VLMTriggerFeedback(Base):
     evaluation_run = relationship("VLMEvaluationRun", back_populates="feedbacks")
     trigger = relationship("TriggerEvent", back_populates="vlm_feedback")
 
+
+class CuratedDatasetSample(Base):
+    """Ground truth labelled samples curated by human evaluator or VLM audit for training/evaluating Behavior models."""
+    __tablename__ = "curated_dataset_samples"
+
+    id = Column(String(64), primary_key=True, index=True)
+    case_id = Column(String(64), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    frame_idx = Column(Integer, nullable=False)
+    timestamp_ms = Column(Float, nullable=False)
+    
+    evidence_url = Column(Text, nullable=True)
+    predicted_state = Column(String(64), nullable=True)
+    ground_truth_label = Column(String(64), nullable=False)  # 'STABLE_INSPECTION', 'PATROL_WALKING', 'HIGH_MOTION', 'LENS_OCCLUDED', 'PAN_SCANNING'
+    features_snapshot = Column(JSON, nullable=True)  # Snapshot of 1s window or rich metadata
+    verified_by = Column(String(64), default="human_evaluator")
+    notes = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+

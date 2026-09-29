@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initStudioLayout();
   initLiveCharts();
   initVideoPlayerSync();
-  initTuningControls();
+  initPluginWorkbench();
   initVLMEvalWorkbench();
   initRouter();
   initWebSocketDebugger();
@@ -139,6 +139,7 @@ function handleRoute() {
   // 1. Match Root Page
   const pageMap = {
     cases: "page-cases",
+    "data-eval": "page-data-eval",
     devices: "page-devices",
     live: "page-live",
     "vlm-eval": "page-vlm-eval",
@@ -196,6 +197,10 @@ function handleRoute() {
     }
     setTimeout(resizePlots, 100);
     setTimeout(resizePlots, 300);
+  } else if (root === "data-eval") {
+    if (window.loadDataEvaluationWorkbench) {
+      window.loadDataEvaluationWorkbench(param || currentCaseId);
+    }
   } else if (root === "vlm-eval") {
     const selectCase = document.getElementById("vlm-select-case");
     if (selectCase) {
@@ -396,6 +401,7 @@ function initSidebar() {
       const pageId = item.getAttribute("data-page");
       const routeMap = {
         "page-cases": "#/cases",
+        "page-data-eval": "#/data-eval",
         "page-devices": "#/devices",
         "page-live": "#/live",
         "page-vlm-eval": "#/vlm-eval",
@@ -811,6 +817,7 @@ async function openCaseStudio(caseId, updateHash = true, forceReload = false) {
   telemetryData = await telRes.json();
 
   renderTriggers(currentCaseData.triggers || []);
+  renderBehaviorTimeline(telemetryData);
   buildCharts(telemetryData);
   logDebug(`[Studio] Loaded ${telemetryData.length} telemetry records & ${(currentCaseData.triggers || []).length} triggers.`);
 }
@@ -869,6 +876,9 @@ function renderTriggers(triggers) {
   // Default display first trigger
   if (triggers.length > 0) {
     showTriggerMetaDeck(triggers[0]);
+    if (window.setStudioSelectedTriggerForEval) {
+      window.setStudioSelectedTriggerForEval(triggers[0]);
+    }
   }
 
   triggers.forEach((tr, idx) => {
@@ -889,6 +899,9 @@ function renderTriggers(triggers) {
       document.querySelectorAll(".trigger-item").forEach(el => el.classList.remove("active-trigger"));
       item.classList.add("active-trigger");
       showTriggerMetaDeck(tr);
+      if (window.setStudioSelectedTriggerForEval) {
+        window.setStudioSelectedTriggerForEval(tr);
+      }
 
       const targetSec = tr.timestamp_ms / 1000.0;
       seekVideoToTime(targetSec);
@@ -1555,6 +1568,8 @@ function drawLiveCanvasOverlay(t) {
 let prevCaseSummary = null;
 
 function syncTuningSlidersFromCase(caseData) {
+  syncPluginCase(caseData);
+  return;
   if (!caseData) return;
   const titleEl = document.getElementById("tuning-case-title");
   const metaId = document.getElementById("tuning-meta-id");
@@ -2068,6 +2083,7 @@ function initVLMEvalWorkbench() {
         return;
       }
       const p = currentVLMEvalRun.recommended_params;
+      pluginRecommendedParams = p;
       
       // Fill values to Tuning page
       const selProfile = document.getElementById("tune-profile");

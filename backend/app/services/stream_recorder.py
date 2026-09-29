@@ -150,9 +150,10 @@ class StreamRecorderService:
 
             os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
             cap = cv2.VideoCapture(session.rtsp_url, cv2.CAP_FFMPEG)
-            motion = MotionEngine(max_corners=120)
-            cadence = CadenceAnalyzer(fps=15.0, window_sec=1.5)
-            triggers = TriggerEngine()
+            from backend.app.framework import Pipeline
+            pipeline = Pipeline(fps=cap.get(cv2.CAP_PROP_FPS) or 25.0)
+            case.config_params = pipeline.config
+            db.commit()
 
             frame_idx = 0
             start_t = time.time()
@@ -164,27 +165,7 @@ class StreamRecorderService:
                     continue
 
                 curr_t = time.time() - start_t
-                m = motion.process_frame(frame, return_points=True)
-                c = cadence.update(curr_t, m.speed, m.dy, m.dx, m.confidence)
-                trigs = triggers.evaluate(
-                    frame_idx=frame_idx,
-                    timestamp_sec=curr_t,
-                    speed=m.speed,
-                    sharpness=m.sharpness,
-                    confidence=m.confidence,
-                    stable_duration_sec=c.stable_duration_sec,
-                    is_periodic=c.is_periodic,
-                    dominant_freq_hz=c.dominant_freq_hz,
-                    predicted_state=c.predicted_state,
-                    occlusion_ratio=m.occlusion_ratio,
-                    mean_brightness=m.mean_brightness,
-                    contrast_score=m.contrast_score,
-                    angular_yaw_vel=c.angular_yaw_velocity,
-                    pre_stability=c.pre_stability_score,
-                    dx=m.dx,
-                    dy=m.dy,
-                    rotation_deg=m.rotation_deg,
-                )
+                m, c, trigs = pipeline.process(frame, curr_t, frame_idx, return_points=True)
 
                 # Update live state
                 telemetry_payload = {

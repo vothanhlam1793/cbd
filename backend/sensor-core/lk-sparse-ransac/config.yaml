@@ -1,0 +1,14 @@
+id: lk-sparse-ransac
+name: LK Sparse + RANSAC
+version: 1.0.0
+contract_version: 1
+description: Đo dịch chuyển ảnh, độ xoay trong mặt phẳng, độ nét và vùng ít texture. Đơn vị pixel, không phải IMU vật lý.
+parameters:
+  max_corners:
+    label: Số điểm bám tối đa
+    type: integer
+    default: 150
+    min: 40
+    max: 350
+    step: 10
+    unit: điểm

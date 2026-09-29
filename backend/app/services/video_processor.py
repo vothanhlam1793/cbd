@@ -16,9 +16,7 @@ import cv2
 import numpy as np
 from sqlalchemy.orm import Session
 
-from backend.app.core.motion_engine import MotionEngine
-from backend.app.core.cadence_analyzer import CadenceAnalyzer
-from backend.app.core.trigger_rules import TriggerEngine
+from backend.app.framework import Pipeline
 from backend.app.models.schema import AnalysisCase, CaseTelemetry, TriggerEvent
 from backend.app.services.minio_service import upload_file_bytes
 from backend.app.services.ws_manager import ws_manager
@@ -70,6 +68,14 @@ def process_video_case(
     worker_db = SessionLocal()
     try:
         _run_process(worker_db, case_id, video_path, config_params)
+    except Exception as exc:
+        worker_db.rollback()
+        case = worker_db.query(AnalysisCase).filter(AnalysisCase.id == case_id).first()
+        if case:
+            case.status = 'failed'
+            case.summary_stats = {'error': str(exc)}
+            worker_db.commit()
+        raise
     finally:
         worker_db.close()
 
@@ -88,29 +94,6 @@ def _run_process(
     case.status = "processing"
     db.commit()
 
-    cfg = config_params or {}
-    profile = cfg.get("profile", "inspection_sensor")
-    max_corners = cfg.get("max_corners", 150)
-    window_sec = cfg.get("window_sec", 0.8)
-    stable_thresh = cfg.get("stable_speed_threshold", 1.2)
-    min_sharpness = cfg.get("min_sharpness", 150.0)
-    max_occlusion = cfg.get("max_occlusion_ratio", 0.30)
-    max_angular_yaw = cfg.get("max_angular_yaw_vel", 180.0)
-    cooldown_sec = cfg.get("cooldown_sec", 15.0)
-    spike_speed = cfg.get("spike_speed_threshold", 12.0)
-
-    motion_engine = MotionEngine(max_corners=max_corners)
-    cadence_analyzer = CadenceAnalyzer(window_sec=window_sec, stable_speed_threshold=stable_thresh)
-    trigger_engine = TriggerEngine(
-        profile=profile,
-        min_stable_duration_sec=window_sec,
-        min_sharpness=min_sharpness,
-        max_occlusion_ratio=max_occlusion,
-        max_angular_yaw_vel=max_angular_yaw,
-        spike_speed_threshold=spike_speed,
-        cooldown_sec=cooldown_sec,
-    )
-
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         case.status = "failed"
@@ -128,7 +111,8 @@ def _run_process(
     case.total_frames = total_frames
     case.duration_sec = duration_sec
     case.resolution = f"{width}x{height}"
-    cadence_analyzer.fps = fps
+    pipeline = Pipeline(config_params, fps=fps)
+    case.config_params = pipeline.config
 
     start_perf = time.time()
     frame_idx = 0
@@ -148,27 +132,7 @@ def _run_process(
         timestamp_ms = timestamp_sec * 1000.0
 
         # Motion analysis
-        m = motion_engine.process_frame(frame, return_points=False)
-        c = cadence_analyzer.update(timestamp_sec, m.speed, m.dy, m.dx, m.confidence)
-        trigs = trigger_engine.evaluate(
-            frame_idx=frame_idx,
-            timestamp_sec=timestamp_sec,
-            speed=m.speed,
-            sharpness=m.sharpness,
-            confidence=m.confidence,
-            stable_duration_sec=c.stable_duration_sec,
-            is_periodic=c.is_periodic,
-            dominant_freq_hz=c.dominant_freq_hz,
-            predicted_state=c.predicted_state,
-            occlusion_ratio=m.occlusion_ratio,
-            mean_brightness=m.mean_brightness,
-            contrast_score=m.contrast_score,
-            angular_yaw_vel=c.angular_yaw_velocity,
-            pre_stability=c.pre_stability_score,
-            dx=m.dx,
-            dy=m.dy,
-            rotation_deg=m.rotation_deg,
-        )
+        m, c, trigs = pipeline.process(frame, timestamp_sec, frame_idx)
 
         speeds.append(m.speed)
         sharpnesses.append(m.sharpness)
@@ -277,6 +241,7 @@ def _run_process(
     case.status = "ready"
     case.total_frames = frame_idx
     case.summary_stats = {
+        **pipeline.stats(),
         "avg_speed": round(float(np.mean(speeds)), 2) if speeds else 0.0,
         "max_speed": round(float(np.max(speeds)), 2) if speeds else 0.0,
         "avg_sharpness": round(float(np.mean(sharpnesses)), 2) if sharpnesses else 0.0,

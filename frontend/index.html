@@ -23,13 +23,17 @@
         <span class="menu-icon">📁</span>
         <span class="menu-text">1. Kho Video & Soi Sensor</span>
       </li>
+      <li class="menu-item" data-page="page-data-eval">
+        <span class="menu-icon">📊</span>
+        <span class="menu-text">2. Đánh Giá & Kho Nhãn</span>
+      </li>
       <li class="menu-item" data-page="page-vlm-eval">
         <span class="menu-icon">🤖</span>
-        <span class="menu-text">2. VLM Giám Định Mô Hình Toán</span>
+        <span class="menu-text">3. VLM Giám Định Mô Hình Toán</span>
       </li>
       <li class="menu-item" data-page="page-live">
         <span class="menu-icon">📡</span>
-        <span class="menu-text">3. Giám Sát Luồng Trực Tiếp</span>
+        <span class="menu-text">4. Giám Sát Luồng Trực Tiếp</span>
       </li>
       <li class="menu-item" data-page="page-devices">
         <span class="menu-icon">📹</span>
@@ -224,7 +228,7 @@
 
             <div class="chart-card">
               <div class="card-title">
-                <span>📈 Đồ Thị Tốc Độ Rung Lắc Đồng Bộ Thời Gian</span>
+                <span>Khối 1 · Sensor Core — Sóng chuyển động ảnh</span>
                 <span style="font-size:0.75rem; color:var(--text-muted);">Kéo chuột để quét vùng phóng to • Lăn chuột để Zoom</span>
               </div>
               <div id="chart-motion" style="width:100%; height:180px;"></div>
@@ -232,14 +236,14 @@
 
             <div class="chart-card">
               <div class="card-title">
-                <span>📊 Đồ Thị Phổ Nhịp (Cadence Hz) & Độ Nét (Sharpness)</span>
+                <span>Khối 2 · Nhịp chuyển động (đối chiếu độ nét từ Sensor)</span>
               </div>
               <div id="chart-cadence" style="width:100%; height:140px;"></div>
             </div>
 
             <div class="card">
               <div class="card-title">
-                <span>🎯 Mốc Trigger Kích Hoạt & Siêu Dữ Liệu (Rich Metadata)</span>
+                <span>Khối 2 · Behavior & Trigger — Sự kiện và bằng chứng</span>
                 <span id="trigger-total-count" style="font-size:0.8rem; color:var(--text-muted);">0 Sự kiện</span>
               </div>
               
@@ -275,6 +279,18 @@
                     <div id="deck-val-state" style="font-weight:700; color:var(--accent-cyan);">--</div>
                   </div>
                 </div>
+
+                <!-- Quick Ground Truth Labeling Bar in Studio -->
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; background:#0d1117; border:1px solid var(--border-color); border-radius:6px; padding:8px; margin-bottom:8px;">
+                  <span style="font-size:0.76rem; font-weight:700; color:var(--text-secondary);">🏷️ Gán Nhãn Vào Kho Train:</span>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn btn-studio-label" data-label="STABLE_INSPECTION" style="padding:3px 8px; font-size:0.75rem; background:#238636; color:#fff;">👍 Inspection</button>
+                    <button class="btn btn-studio-label" data-label="PATROL_WALKING" style="padding:3px 8px; font-size:0.75rem;">🚶 Đi Bộ</button>
+                    <button class="btn btn-studio-label" data-label="HIGH_MOTION" style="padding:3px 8px; font-size:0.75rem;">⚡ Rung Giật</button>
+                    <button class="btn btn-studio-label" data-label="LENS_OCCLUDED_OR_BLUR" style="padding:3px 8px; font-size:0.75rem;">🙈 Che Áo / Mờ</button>
+                  </div>
+                </div>
+
                 <details style="font-size:0.75rem; color:var(--text-secondary); cursor:pointer;">
                   <summary style="font-weight:600; color:var(--accent-cyan); outline:none;">🔍 Xem Chi Tiết JSON Payload Gửi Lên Hệ Thống Sau</summary>
                   <pre id="deck-json-payload" style="background:#090d13; padding:8px; border-radius:4px; margin-top:6px; overflow-x:auto; font-family:monospace; max-height:140px;"></pre>
@@ -615,6 +631,136 @@
       </div>
     </div>
 
+    <!-- ================= PAGE 2: DATA & EVALUATION WORKBENCH ================= -->
+    <div id="page-data-eval" class="view-container">
+      <div class="sub-nav-bar">
+        <div class="page-title-group">
+          <span class="page-title">📊 Đánh Giá Kết Quả & Kho Nhãn Dữ Liệu Huấn Luyện</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="btn-sync-vlm-to-eval" style="background:#1f6feb; color:#fff;" title="Chuyển kết quả giám định của Gemini 3.7 thành nhãn huấn luyện">⚡ Đồng Bộ Nhãn Từ VLM</button>
+          <button class="btn" id="btn-export-dataset-json" style="background:#238636; color:#fff;" title="Tải file JSON chứa đầy đủ vector đặc trưng 1s và nhãn để nạp cho OpenCode/ML script">📥 Xuất Dataset JSON</button>
+          <button class="btn" id="btn-export-dataset-csv" style="background:#30363d; color:#fff;" title="Tải file CSV cho pandas / scikit-learn">📄 Xuất Dataset CSV</button>
+        </div>
+      </div>
+
+      <div style="padding-top:16px; display:flex; flex-direction:column; gap:16px;">
+        
+        <!-- Controls & Case Selector Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>🎯 Chọn Case Video & Tổng Quan Dữ Liệu Đo Đạc</span>
+            <div style="display:flex; gap:8px;">
+              <span class="meta-badge" id="eval-badge-total-trig">🎯 0 triggers</span>
+              <span class="meta-badge" id="eval-badge-labeled" style="background:var(--accent-green); color:#000; font-weight:700;">🏷️ 0 đã gán nhãn</span>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1.6fr; gap:16px; align-items:start;">
+            <div>
+              <label style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">Chọn Case để chấm điểm kết quả:</label>
+              <select id="eval-select-case" class="btn" style="width:100%; margin-top:6px; font-weight:600;">
+                <option value="" disabled selected>-- Đang nạp danh sách Case... --</option>
+              </select>
+              <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted); line-height:1.5;">
+                💡 <b>Mẹo:</b> Khi xem video phát hiện mốc đúng/sai, bạn bấm nút nhãn tương ứng. Hệ thống sẽ trích xuất vector 18 đặc trưng trong cửa sổ 1 giây quanh mốc đó và lưu vào CSDL để OpenCode train model.
+              </div>
+            </div>
+
+            <!-- Feature Distribution Breakdown across States -->
+            <div style="background:#161b22; border:1px solid var(--border-color); border-radius:6px; padding:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:0.82rem; font-weight:700; color:var(--accent-cyan);">🔬 Phân Bố Đặc Trưng Đo Đạc Của Case Này</span>
+                <button class="btn" id="btn-copy-feature-dist" style="font-size:0.75rem; padding:2px 8px;">📋 Copy Số Liệu Cho OpenCode</button>
+              </div>
+              <table class="data-table" style="font-size:0.76rem;">
+                <thead>
+                  <tr>
+                    <th>Trạng Thái</th>
+                    <th>Số Frame</th>
+                    <th>Vận Tốc Trung Bình</th>
+                    <th>Dao Động Nảy (|dy|)</th>
+                    <th>Độ Nét Laplacian</th>
+                  </tr>
+                </thead>
+                <tbody id="eval-distribution-tbody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Chưa có dữ liệu</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Candidate Triggers Inspection & 1-Click Labeling Table -->
+        <div class="card">
+          <div class="card-title">
+            <span>🔍 Bảng Đối Soát Mốc Kích Hoạt & Chấm Điểm 1-Click (Trigger Inspector)</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.8rem; color:var(--text-muted);">Lọc theo nhãn:</span>
+              <select id="eval-filter-label" class="btn" style="font-size:0.78rem; padding:3px 8px;">
+                <option value="ALL">Tất cả mốc</option>
+                <option value="UNLABELED" selected>Chưa gán nhãn</option>
+                <option value="STABLE_INSPECTION">Inspection (Đúng)</option>
+                <option value="PATROL_WALKING">Đi Bộ Tuần Tra</option>
+                <option value="HIGH_MOTION">Rung Giật Mạnh</option>
+                <option value="LENS_OCCLUDED_OR_BLUR">Che Áo / Nhòe Mờ</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="overflow-x:auto; max-height:480px;">
+            <table class="data-table" style="font-size:0.8rem;">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th style="width:85px;">Keyframe</th>
+                  <th style="width:90px;">Thời Gian</th>
+                  <th style="width:110px;">Dự Đoán CV</th>
+                  <th>Chỉ Số Đo Đạc Tức Thời</th>
+                  <th>Đặc Trưng Cửa Sổ 1.0s (1D Features)</th>
+                  <th style="width:130px;">Nhãn Hiện Tại</th>
+                  <th style="min-width:240px;">Chấm Điểm Nhanh (Gán Nhãn)</th>
+                </tr>
+              </thead>
+              <tbody id="eval-triggers-tbody">
+                <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Vui lòng chọn một Case để tải danh sách mốc kích hoạt.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Curated Dataset Repository Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>📦 Kho Mẫu Đã Gán Nhãn Trong Hệ Thống (Curated Training Dataset)</span>
+            <div id="eval-dataset-stat-badges" style="display:flex; gap:6px; flex-wrap:wrap;">
+              <!-- Badges populated dynamically -->
+            </div>
+          </div>
+          <div style="overflow-x:auto; max-height:300px;">
+            <table class="data-table" style="font-size:0.78rem;">
+              <thead>
+                <tr>
+                  <th>Mã Mẫu</th>
+                  <th>Nguồn Case</th>
+                  <th>Frame #</th>
+                  <th>Thời Gian</th>
+                  <th>Nhãn Chuẩn (Ground Truth)</th>
+                  <th>Người Xác Nhận</th>
+                  <th>Đặc Trưng Lưu Trữ (1s Vector)</th>
+                  <th>Ghi Chú</th>
+                  <th style="width:50px;">Xóa</th>
+                </tr>
+              </thead>
+              <tbody id="eval-curated-dataset-tbody">
+                <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:16px;">Đang nạp kho mẫu đã gán nhãn...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ================= PAGE 4: VLM EVALUATION BENCHMARK ================= -->
     <div id="page-vlm-eval" class="view-container">
       <div class="sub-nav-bar">
@@ -840,6 +986,8 @@
 
   <div id="toast-container"></div>
   <script src="libs/uPlot.iife.min.js"></script>
+  <script src="js/framework.js"></script>
+  <script src="js/data_eval.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

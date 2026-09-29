@@ -14,11 +14,12 @@ from backend.app.core.motion_engine import MotionEngine
 from backend.app.core.cadence_analyzer import CadenceAnalyzer
 from backend.app.core.trigger_rules import TriggerEngine
 from backend.app.database import SessionLocal, get_db
-from backend.app.models.schema import AnalysisCase, CaseTelemetry, Device, TriggerEvent
+from backend.app.models.schema import AnalysisCase, CaseTelemetry, Device, TriggerEvent, CuratedDatasetSample, VLMEvaluationRun, VLMTriggerFeedback
 from backend.app.services.minio_service import upload_local_file
 from backend.app.services.stream_recorder import StreamRecorderService
 from backend.app.services.video_processor import process_video_case
 from backend.app.services.ws_manager import ws_manager
+from backend.app.framework import discover, normalize, Pipeline
 
 router = APIRouter()
 recorder_service = StreamRecorderService()
@@ -259,6 +260,12 @@ async def upload_video_case(
     return {"case_id": case_id, "status": "processing", "minio_url": minio_url}
 
 
+@router.get("/framework/plugins")
+def framework_plugins():
+    return discover()
+
+
+@router.post("/cases/{case_id}/run-pipeline")
 @router.post("/cases/{case_id}/rerun")
 def rerun_case_analysis(
     case_id: str,
@@ -266,15 +273,22 @@ def rerun_case_analysis(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    case = db.query(AnalysisCase).filter(AnalysisCase.id == case_id).first()
+    case = db.query(AnalysisCase).filter(AnalysisCase.id == case_id).with_for_update().first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
     # Clear previous telemetry and triggers
+    if case.status in ('processing', 'recording'):
+        raise HTTPException(status_code=409, detail='Case is already running')
+    try:
+        config = normalize(payload.get('config_params', payload))
+        Pipeline(config)  # Check installed plugin interfaces before deleting previous results.
+    except (ValueError, TypeError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     db.query(CaseTelemetry).filter(CaseTelemetry.case_id == case_id).delete()
     db.query(TriggerEvent).filter(TriggerEvent.case_id == case_id).delete()
     
-    case.config_params = payload.get("config_params", {})
+    case.config_params = config
     case.algorithm_version = payload.get("algorithm_version", case.algorithm_version)
     case.status = "processing"
     db.commit()
@@ -322,8 +336,7 @@ def stream_live_mjpeg_feed(device_id: str, db: Session = Depends(get_db)):
         import os
         os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
         cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
-        motion = MotionEngine(max_corners=80)
-        cadence = CadenceAnalyzer(fps=15.0, window_sec=1.5)
+        pipeline = Pipeline(fps=cap.get(cv2.CAP_PROP_FPS) or 25.0)
         
         frame_idx = 0
         start_t = time.time()
@@ -339,13 +352,15 @@ def stream_live_mjpeg_feed(device_id: str, db: Session = Depends(get_db)):
                 curr_t = time.time() - start_t
                 
                 # Perform fast motion & cadence analysis
-                m = motion.process_frame(frame, return_points=True)
-                c = cadence.update(curr_t, m.speed, m.dy, m.dx, m.confidence)
+                m, c, events = pipeline.process(frame, curr_t, frame_idx, return_points=True)
                 
                 # Broadcast real-time live telemetry over WebSocket
                 if frame_idx % 2 == 0:
                     try:
                         telemetry_payload = {
+                            "sensor": m.to_dict(),
+                            "behavior": c.to_dict(),
+                            "pipeline": pipeline.config,
                             "frame_idx": frame_idx,
                             "timestamp_ms": curr_t * 1000.0,
                             "dx": m.dx,
@@ -559,4 +574,378 @@ def export_sensor_spec(case_id: str, db: Session = Depends(get_db)):
             for tr in triggers
         ]
     }
+
+
+# ---------------------------------------------------------
+# DATA EVALUATION & CURATED DATASET WORKBENCH APIS
+# ---------------------------------------------------------
+def _extract_telemetry_window_features(db: Session, case_id: str, center_frame_idx: int, half_window: int = 15) -> Dict:
+    """Extracts a 1-second statistical feature vector (30 frames) around a target frame index."""
+    import numpy as np
+    
+    start_frame = max(0, center_frame_idx - half_window)
+    end_frame = center_frame_idx + half_window
+    
+    rows = (
+        db.query(CaseTelemetry)
+        .filter(CaseTelemetry.case_id == case_id)
+        .filter(CaseTelemetry.frame_idx >= start_frame)
+        .filter(CaseTelemetry.frame_idx <= end_frame)
+        .order_by(CaseTelemetry.frame_idx.asc())
+        .all()
+    )
+    
+    if not rows:
+        return {}
+    
+    speeds = [r.motion_speed for r in rows if r.motion_speed is not None]
+    dxs = [r.flow_dx for r in rows if r.flow_dx is not None]
+    dys = [r.flow_dy for r in rows if r.flow_dy is not None]
+    sharps = [r.sharpness_score for r in rows if r.sharpness_score is not None]
+    confs = [r.tracking_confidence for r in rows if r.tracking_confidence is not None]
+    freqs = [r.dominant_freq_hz for r in rows if r.dominant_freq_hz is not None]
+    periodics = [1.0 if r.is_periodic else 0.0 for r in rows]
+    
+    # Calculate Jerk (differential speed)
+    jerks = [abs(speeds[i] - speeds[i-1]) for i in range(1, len(speeds))] if len(speeds) > 1 else [0.0]
+    
+    features = {
+        "window_frames": len(rows),
+        "mean_speed": round(float(np.mean(speeds)), 3) if speeds else 0.0,
+        "std_speed": round(float(np.std(speeds)), 3) if speeds else 0.0,
+        "max_speed": round(float(np.max(speeds)), 3) if speeds else 0.0,
+        "mean_jerk": round(float(np.mean(jerks)), 3) if jerks else 0.0,
+        "mean_abs_dx": round(float(np.mean(np.abs(dxs))), 3) if dxs else 0.0,
+        "mean_abs_dy": round(float(np.mean(np.abs(dys))), 3) if dys else 0.0,
+        "std_dy": round(float(np.std(dys)), 3) if dys else 0.0,
+        "energy_dy": round(float(np.sum(np.square(dys))), 3) if dys else 0.0,
+        "mean_sharpness": round(float(np.mean(sharps)), 1) if sharps else 0.0,
+        "min_sharpness": round(float(np.min(sharps)), 1) if sharps else 0.0,
+        "mean_confidence": round(float(np.mean(confs)), 2) if confs else 1.0,
+        "mean_cadence_hz": round(float(np.mean(freqs)), 2) if freqs else 0.0,
+        "periodic_ratio": round(float(np.mean(periodics)), 2) if periodics else 0.0,
+    }
+    return features
+
+
+@router.get("/evaluation/cases/{case_id}/summary")
+def get_case_evaluation_summary(case_id: str, db: Session = Depends(get_db)):
+    """Provides complete trigger inspection data, feature snapshots, and state distributions for a case."""
+    import numpy as np
+
+    case = db.query(AnalysisCase).filter(AnalysisCase.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    triggers = db.query(TriggerEvent).filter(TriggerEvent.case_id == case_id).order_by(TriggerEvent.timestamp_ms.asc()).all()
+    
+    # Existing curated labels for this case
+    curated_map = {
+        s.frame_idx: s
+        for s in db.query(CuratedDatasetSample).filter(CuratedDatasetSample.case_id == case_id).all()
+    }
+    
+    # Feature inspection list for all triggers
+    trigger_items = []
+    for t in triggers:
+        details = t.details or {}
+        sp = details.get("spatial_motion", {})
+        vq = details.get("visual_quality", {})
+        cg = details.get("cadence_gait", {})
+        tc = details.get("temporal_context", {})
+        
+        curated_entry = curated_map.get(t.frame_idx)
+        
+        # If not curated yet, compute window feature snapshot on-the-fly
+        features = curated_entry.features_snapshot if curated_entry else _extract_telemetry_window_features(db, case_id, t.frame_idx)
+        
+        trigger_items.append({
+            "trigger_id": t.id,
+            "frame_idx": t.frame_idx,
+            "timestamp_ms": t.timestamp_ms,
+            "timestamp_sec": round(t.timestamp_ms / 1000.0, 2),
+            "trigger_type": t.trigger_type,
+            "reason": t.reason,
+            "evidence_url": t.evidence_minio_url,
+            "sharpness": t.sharpness_score,
+            "predicted_state": t.context_state or cg.get("predicted_state", "stable"),
+            "curated_sample_id": curated_entry.id if curated_entry else None,
+            "ground_truth_label": curated_entry.ground_truth_label if curated_entry else "UNLABELED",
+            "verified_by": curated_entry.verified_by if curated_entry else None,
+            "notes": curated_entry.notes if curated_entry else None,
+            "raw_measurements": {
+                "speed_px_f": sp.get("speed_px_frame", 0.0),
+                "angular_yaw_vel_px_s": sp.get("angular_yaw_vel_px_s", 0.0),
+                "sharpness_laplacian": vq.get("sharpness_laplacian", t.sharpness_score),
+                "occlusion_ratio": vq.get("occlusion_ratio", 0.0),
+                "dwell_duration_sec": tc.get("dwell_duration_sec", 0.0),
+                "pre_stability_score": tc.get("pre_stability_score", 1.0),
+                "cadence_freq_hz": cg.get("cadence_freq_hz", 0.0),
+            },
+            "features_snapshot": features,
+        })
+        
+    # State distribution breakdown across whole telemetry
+    telemetry_rows = db.query(CaseTelemetry).filter(CaseTelemetry.case_id == case_id).all()
+    state_breakdown = {}
+    for r in telemetry_rows:
+        st = r.predicted_state or "unknown"
+        if st not in state_breakdown:
+            state_breakdown[st] = {
+                "count": 0,
+                "speeds": [],
+                "dys": [],
+                "sharps": [],
+            }
+        state_breakdown[st]["count"] += 1
+        state_breakdown[st]["speeds"].append(r.motion_speed or 0.0)
+        state_breakdown[st]["dys"].append(abs(r.flow_dy or 0.0))
+        state_breakdown[st]["sharps"].append(r.sharpness_score or 0.0)
+        
+    distributions = {}
+    for st, v in state_breakdown.items():
+        distributions[st] = {
+            "count": v["count"],
+            "avg_speed": round(float(np.mean(v["speeds"])), 2) if v["speeds"] else 0.0,
+            "avg_dy": round(float(np.mean(v["dys"])), 2) if v["dys"] else 0.0,
+            "avg_sharpness": round(float(np.mean(v["sharps"])), 1) if v["sharps"] else 0.0,
+        }
+
+    return {
+        "case_id": case.id,
+        "case_title": case.title,
+        "total_frames": case.total_frames,
+        "duration_sec": case.duration_sec,
+        "total_triggers": len(triggers),
+        "labeled_count": len([i for i in trigger_items if i["ground_truth_label"] != "UNLABELED"]),
+        "triggers": trigger_items,
+        "state_distributions": distributions,
+    }
+
+
+@router.post("/evaluation/label-sample")
+def label_curated_sample(payload: Dict, db: Session = Depends(get_db)):
+    """Saves or updates a ground truth labeled sample in curated_dataset_samples."""
+    case_id = payload.get("case_id")
+    frame_idx = payload.get("frame_idx")
+    ground_truth_label = payload.get("ground_truth_label")
+    
+    if not case_id or frame_idx is None or not ground_truth_label:
+        raise HTTPException(status_code=400, detail="Missing case_id, frame_idx or ground_truth_label")
+
+    timestamp_ms = payload.get("timestamp_ms", 0.0)
+    evidence_url = payload.get("evidence_url")
+    predicted_state = payload.get("predicted_state")
+    verified_by = payload.get("verified_by", "human_evaluator")
+    notes = payload.get("notes")
+    
+    features = payload.get("features_snapshot")
+    if not features:
+        features = _extract_telemetry_window_features(db, case_id, frame_idx)
+
+    existing = (
+        db.query(CuratedDatasetSample)
+        .filter(CuratedDatasetSample.case_id == case_id)
+        .filter(CuratedDatasetSample.frame_idx == frame_idx)
+        .first()
+    )
+
+    if existing:
+        existing.ground_truth_label = ground_truth_label
+        existing.verified_by = verified_by
+        existing.notes = notes
+        existing.features_snapshot = features
+        if evidence_url:
+            existing.evidence_url = evidence_url
+        if predicted_state:
+            existing.predicted_state = predicted_state
+        sample_id = existing.id
+    else:
+        sample_id = f"samp_{uuid.uuid4().hex[:10]}"
+        new_sample = CuratedDatasetSample(
+            id=sample_id,
+            case_id=case_id,
+            frame_idx=frame_idx,
+            timestamp_ms=timestamp_ms,
+            evidence_url=evidence_url,
+            predicted_state=predicted_state,
+            ground_truth_label=ground_truth_label,
+            features_snapshot=features,
+            verified_by=verified_by,
+            notes=notes,
+        )
+        db.add(new_sample)
+
+    db.commit()
+    return {"ok": True, "sample_id": sample_id, "ground_truth_label": ground_truth_label}
+
+
+@router.post("/evaluation/auto-sync-vlm/{case_id}")
+def sync_vlm_feedback_to_dataset(case_id: str, db: Session = Depends(get_db)):
+    """Automatically maps Gemini 3.7 VLM audit verdicts to ground truth training labels."""
+    latest_run = (
+        db.query(VLMEvaluationRun)
+        .filter(VLMEvaluationRun.case_id == case_id)
+        .order_by(VLMEvaluationRun.created_at.desc())
+        .first()
+    )
+    if not latest_run:
+        raise HTTPException(status_code=404, detail="No VLM evaluation runs found for this case")
+
+    feedbacks = db.query(VLMTriggerFeedback).filter(VLMTriggerFeedback.run_id == latest_run.id).all()
+    count_synced = 0
+
+    for fb in feedbacks:
+        trigger = db.query(TriggerEvent).filter(TriggerEvent.id == fb.trigger_id).first()
+        if not trigger:
+            continue
+
+        verdict = fb.verdict or "useful_keyframe"
+        if verdict == "useful_keyframe":
+            gt_label = "STABLE_INSPECTION"
+        elif verdict == "redundant_motion":
+            gt_label = "PATROL_WALKING"
+        elif verdict == "blurry_unusable":
+            gt_label = "LENS_OCCLUDED_OR_BLUR"
+        else:
+            gt_label = "HIGH_MOTION"
+
+        features = _extract_telemetry_window_features(db, case_id, trigger.frame_idx)
+        existing = (
+            db.query(CuratedDatasetSample)
+            .filter(CuratedDatasetSample.case_id == case_id)
+            .filter(CuratedDatasetSample.frame_idx == trigger.frame_idx)
+            .first()
+        )
+
+        note_txt = f"Auto-synced from Gemini 3.7 audit: {fb.scene_description or verdict}"
+        if existing:
+            existing.ground_truth_label = gt_label
+            existing.verified_by = "vlm_auditor"
+            existing.notes = note_txt
+            existing.features_snapshot = features
+        else:
+            new_s = CuratedDatasetSample(
+                id=f"samp_{uuid.uuid4().hex[:10]}",
+                case_id=case_id,
+                frame_idx=trigger.frame_idx,
+                timestamp_ms=trigger.timestamp_ms,
+                evidence_url=trigger.evidence_minio_url,
+                predicted_state=trigger.context_state,
+                ground_truth_label=gt_label,
+                features_snapshot=features,
+                verified_by="vlm_auditor",
+                notes=note_txt,
+            )
+            db.add(new_s)
+        count_synced += 1
+
+    db.commit()
+    return {"ok": True, "count_synced": count_synced}
+
+
+@router.get("/evaluation/dataset")
+def get_curated_dataset(db: Session = Depends(get_db)):
+    """Returns all curated ground truth samples with category statistics."""
+    samples = db.query(CuratedDatasetSample).order_by(CuratedDatasetSample.created_at.desc()).all()
+    
+    label_counts = {}
+    for s in samples:
+        lbl = s.ground_truth_label
+        label_counts[lbl] = label_counts.get(lbl, 0) + 1
+
+    return {
+        "total_samples": len(samples),
+        "label_counts": label_counts,
+        "samples": [
+            {
+                "id": s.id,
+                "case_id": s.case_id,
+                "frame_idx": s.frame_idx,
+                "timestamp_sec": round(s.timestamp_ms / 1000.0, 2),
+                "evidence_url": s.evidence_url,
+                "predicted_state": s.predicted_state,
+                "ground_truth_label": s.ground_truth_label,
+                "verified_by": s.verified_by,
+                "notes": s.notes,
+                "features_snapshot": s.features_snapshot or {},
+                "created_at": s.created_at.isoformat() + "Z" if s.created_at else None,
+            }
+            for s in samples
+        ]
+    }
+
+
+@router.delete("/evaluation/samples/{sample_id}")
+def delete_curated_sample(sample_id: str, db: Session = Depends(get_db)):
+    s = db.query(CuratedDatasetSample).filter(CuratedDatasetSample.id == sample_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Sample not found")
+    db.delete(s)
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/evaluation/dataset/export")
+def export_curated_dataset(format: str = "json", db: Session = Depends(get_db)):
+    """Exports the curated dataset formatted for ML training (JSON or CSV)."""
+    from fastapi.responses import PlainTextResponse, Response
+    import csv
+    import io
+
+    samples = db.query(CuratedDatasetSample).order_by(CuratedDatasetSample.case_id.asc(), CuratedDatasetSample.frame_idx.asc()).all()
+
+    if format.lower() == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        feature_keys = [
+            "mean_speed", "std_speed", "max_speed", "mean_jerk",
+            "mean_abs_dx", "mean_abs_dy", "std_dy", "energy_dy",
+            "mean_sharpness", "min_sharpness", "mean_confidence",
+            "mean_cadence_hz", "periodic_ratio"
+        ]
+        writer.writerow(["sample_id", "case_id", "frame_idx", "timestamp_sec", "ground_truth_label", "verified_by"] + feature_keys)
+        
+        for s in samples:
+            f = s.features_snapshot or {}
+            row = [
+                s.id, s.case_id, s.frame_idx, round(s.timestamp_ms / 1000.0, 2),
+                s.ground_truth_label, s.verified_by
+            ] + [f.get(k, 0.0) for k in feature_keys]
+            writer.writerow(row)
+            
+        csv_content = output.getvalue()
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="cbd_curated_dataset.csv"'}
+        )
+
+    # Standard JSON export
+    data = {
+        "dataset_name": "CBD Motion Lab Curated Behavior Dataset",
+        "exported_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "total_samples": len(samples),
+        "samples": [
+            {
+                "id": s.id,
+                "case_id": s.case_id,
+                "frame_idx": s.frame_idx,
+                "timestamp_sec": round(s.timestamp_ms / 1000.0, 2),
+                "ground_truth_label": s.ground_truth_label,
+                "verified_by": s.verified_by,
+                "evidence_url": s.evidence_url,
+                "notes": s.notes,
+                "features": s.features_snapshot or {},
+            }
+            for s in samples
+        ]
+    }
+    return Response(
+        content=json.dumps(data, indent=2, ensure_ascii=False),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="cbd_curated_dataset.json"'}
+    )
 
