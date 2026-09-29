@@ -102,7 +102,7 @@ function initDataEvaluationWorkbench() {
         toast.error("Lỗi đồng bộ VLM: " + err.message);
       } finally {
         btnSyncVlm.disabled = false;
-        btnSyncVlm.textContent = "⚡ Đồng Bộ Nhãn Từ VLM";
+        btnSyncVlm.textContent = "⚡ Đồng bộ VLM";
       }
     });
   }
@@ -154,8 +154,8 @@ async function loadCaseEvaluation(caseId) {
     currentEvalCaseData = await res.json();
 
     // Badges
-    document.getElementById("eval-badge-total-trig").textContent = `🎯 ${currentEvalCaseData.total_triggers} triggers`;
-    document.getElementById("eval-badge-labeled").textContent = `🏷️ ${currentEvalCaseData.labeled_count} / ${currentEvalCaseData.total_triggers} đã gán nhãn`;
+    document.getElementById("eval-badge-total-trig").textContent = `🎯 ${currentEvalCaseData.total_triggers} mốc`;
+    document.getElementById("eval-badge-labeled").textContent = `🏷️ ${currentEvalCaseData.labeled_count}/${currentEvalCaseData.total_triggers} nhãn`;
 
     // Render Distribution
     renderDistributionTable(currentEvalCaseData.state_distributions || {});
@@ -226,39 +226,36 @@ function renderEvalTriggersTable(triggers) {
       <td>${i + 1}</td>
       <td>
         ${t.evidence_url ? `
-          <img src="${t.evidence_url}" class="trigger-img-thumb" style="width:64px; height:42px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="openEvidenceModal('${t.evidence_url}', '${t.reason || ""}')">
-        ` : `<span style="color:var(--text-muted); font-size:0.75rem;">Không có ảnh</span>`}
+          <img src="${t.evidence_url}" class="trigger-img-thumb" style="width:60px; height:38px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="openEvidenceModal('${t.evidence_url}', '${t.reason || ""}')">
+        ` : `<span style="color:var(--text-muted); font-size:0.75rem;">--</span>`}
       </td>
       <td>
         <b>${formatSecondsToMMSS(t.timestamp_sec)}</b><br>
-        <span style="font-size:0.7rem; color:var(--text-muted);">${t.timestamp_sec}s (#${t.frame_idx})</span>
+        <span style="font-size:0.68rem; color:var(--text-muted);">${t.timestamp_sec}s (#${t.frame_idx})</span>
       </td>
       <td>
-        <span class="trigger-tag tag-stable" style="font-size:0.72rem;">${t.predicted_state || "STABLE"}</span>
+        <span class="trigger-tag tag-stable" style="font-size:0.7rem;">${t.predicted_state || "STABLE"}</span>
       </td>
-      <td style="font-family:monospace; font-size:0.72rem; line-height:1.4;">
-        v: <b>${(raw.speed_px_f || 0).toFixed(2)}</b> px/f<br>
-        yaw: <b>${(raw.angular_yaw_vel_px_s || 0).toFixed(0)}</b> px/s<br>
-        sharp: <b>${(raw.sharpness_laplacian || 0).toFixed(0)}</b><br>
-        occl: <b>${((raw.occlusion_ratio || 0) * 100).toFixed(0)}%</b>
+      <td style="font-family:monospace; font-size:0.72rem; line-height:1.3;">
+        v:<b>${(raw.speed_px_f || 0).toFixed(1)}</b> yaw:<b>${(raw.angular_yaw_vel_px_s || 0).toFixed(0)}</b><br>
+        nét:<b>${(raw.sharpness_laplacian || 0).toFixed(0)}</b> che:<b>${((raw.occlusion_ratio || 0) * 100).toFixed(0)}%</b>
       </td>
-      <td style="font-family:monospace; font-size:0.72rem; line-height:1.4; color:var(--text-secondary);">
-        mean_v: <b>${f1s.mean_speed ?? "--"}</b> | std_dy: <b>${f1s.std_dy ?? "--"}</b><br>
-        jerk: <b>${f1s.mean_jerk ?? "--"}</b> | cadence: <b>${f1s.mean_cadence_hz ?? "--"}Hz</b>
+      <td style="font-family:monospace; font-size:0.72rem; line-height:1.3; color:var(--text-secondary);">
+        v̄:<b>${f1s.mean_speed ?? "--"}</b> | σdy:<b>${f1s.std_dy ?? "--"}</b><br>
+        jerk:<b>${f1s.mean_jerk ?? "--"}</b> | <b>${f1s.mean_cadence_hz ?? "--"}Hz</b>
       </td>
       <td>
-        <span class="meta-badge" id="badge-label-${t.frame_idx}" style="background:${labelBadgeColor}; color:#fff; font-weight:700; font-size:0.75rem;">
+        <span class="meta-badge" id="badge-label-${t.frame_idx}" style="background:${labelBadgeColor}; color:#fff; font-weight:700; font-size:0.72rem;">
           ${t.ground_truth_label}
         </span>
-        ${t.verified_by ? `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">bởi ${t.verified_by}</div>` : ""}
       </td>
       <td>
-        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          <button class="btn btn-action-label" data-frame="${t.frame_idx}" data-label="STABLE_INSPECTION" style="padding:2px 6px; font-size:0.72rem; background:#238636; color:#fff;" title="Xác nhận đúng là lúc kỹ sư dừng quan sát hiện trường">👍 Inspection</button>
-          <button class="btn btn-action-label" data-frame="${t.frame_idx}" data-label="PATROL_WALKING" style="padding:2px 6px; font-size:0.72rem;" title="Mốc này thực ra là đang đi bộ tuần tra">🚶 Đi Bộ</button>
-          <button class="btn btn-action-label" data-frame="${t.frame_idx}" data-label="HIGH_MOTION" style="padding:2px 6px; font-size:0.72rem;" title="Vung tay/Rung giật mạnh">⚡ Rung Giật</button>
-          <button class="btn btn-action-label" data-frame="${t.frame_idx}" data-label="LENS_OCCLUDED_OR_BLUR" style="padding:2px 6px; font-size:0.72rem;" title="Bị vạt áo che hoặc ảnh nhòe mờ">🙈 Che Áo/Mờ</button>
-          <button class="btn btn-action-note" data-frame="${t.frame_idx}" style="padding:2px 6px; font-size:0.72rem;" title="Ghi chú thêm">✏️ Note</button>
+        <div class="action-btn-group">
+          <button class="btn btn-action-label btn-icon-sm" data-frame="${t.frame_idx}" data-label="STABLE_INSPECTION" style="background:#238636; color:#fff;" title="Xác nhận dừng quan sát">👍 Chuẩn</button>
+          <button class="btn btn-action-label btn-icon-sm" data-frame="${t.frame_idx}" data-label="PATROL_WALKING" title="Đi bộ tuần tra">🚶 Đi bộ</button>
+          <button class="btn btn-action-label btn-icon-sm" data-frame="${t.frame_idx}" data-label="HIGH_MOTION" title="Rung giật mạnh">⚡ Rung</button>
+          <button class="btn btn-action-label btn-icon-sm" data-frame="${t.frame_idx}" data-label="LENS_OCCLUDED_OR_BLUR" title="Che áo hoặc nhòe mờ">🙈 Che</button>
+          <button class="btn btn-action-note btn-icon-sm" data-frame="${t.frame_idx}" title="Ghi chú tùy biến">✏️</button>
         </div>
       </td>
     `;
@@ -391,7 +388,7 @@ async function loadCuratedDataset() {
           ${s.notes || "--"}
         </td>
         <td>
-          <button class="btn btn-danger btn-del-sample" data-id="${s.id}" style="padding:2px 6px; font-size:0.75rem;">✕</button>
+          <button class="btn btn-danger btn-del-sample btn-icon-sm" data-id="${s.id}" title="Xóa mẫu này">🗑️</button>
         </td>
       `;
       tbody.appendChild(tr);

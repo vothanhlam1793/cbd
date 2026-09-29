@@ -807,4 +807,56 @@ body {
   position: relative;
 }
 
+/* Microcopy & Clean Workbench Utility Classes */
+.info-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: help;
+  margin-left: 6px;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.info-hint:hover {
+  background: var(--accent-cyan);
+  color: #000;
+}
+
+.action-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.btn-icon-sm {
+  padding: 3px 6px !important;
+  font-size: 0.75rem !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.compact-table th, .compact-table td {
+  padding: 6px 10px !important;
+  white-space: nowrap;
+}
+
+
 

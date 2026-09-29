@@ -271,7 +271,7 @@ function initWebSocketDebugger() {
     debugWs = new WebSocket(wsUrl);
 
     debugWs.onopen = () => {
-      badge.textContent = "🟢 WS Connected";
+      badge.textContent = "🟢 WS OK";
       badge.style.color = "var(--accent-cyan)";
       logDebug("[WebSocket] Connected successfully to CBD Backend Engine.");
 
@@ -347,7 +347,7 @@ function initWebSocketDebugger() {
     };
 
     debugWs.onclose = () => {
-      badge.textContent = "🔴 WS Disconnected";
+      badge.textContent = "🔴 WS Off";
       badge.style.color = "var(--accent-red)";
       logDebug("[WebSocket] Disconnected. Retrying in 4s...");
       if (wsPingInterval) clearInterval(wsPingInterval);
@@ -708,11 +708,13 @@ async function loadCases() {
         <td><b>${formatDuration(c.duration_sec)}</b></td>
         <td>${(c.fps || 0).toFixed(1)} fps / ${c.total_frames || 0} f</td>
         <td style="font-size:0.8rem; color:var(--text-secondary);">${formatDateTime(c.created_at)}</td>
-        <td><b>${c.trigger_count}</b> nổ</td>
+        <td><b>${c.trigger_count}</b> mốc</td>
         <td><span class="trigger-tag ${c.status === "ready" ? "tag-stable" : "tag-spike"}">${c.status}</span></td>
         <td>
-          <button class="btn btn-primary btn-open-case" data-id="${c.id}" style="padding:4px 10px;">🧪 Mở Studio</button>
-          <button class="btn btn-danger btn-del-case" data-id="${c.id}" style="padding:4px 8px;">✕</button>
+          <div class="action-btn-group">
+            <button class="btn btn-primary btn-open-case btn-icon-sm" data-id="${c.id}" title="Mở Replay Studio">🧪 Studio</button>
+            <button class="btn btn-danger btn-del-case btn-icon-sm" data-id="${c.id}" title="Xóa Case">🗑️</button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
@@ -826,10 +828,10 @@ function renderTriggers(triggers) {
   const container = document.getElementById("trigger-list");
   const metaDeck = document.getElementById("trigger-metadata-deck");
   container.innerHTML = "";
-  document.getElementById("trigger-total-count").textContent = `${triggers.length} Sự kiện`;
+  document.getElementById("trigger-total-count").textContent = `${triggers.length} mốc`;
 
   if (triggers.length === 0) {
-    container.innerHTML = `<div style="padding:12px; color:var(--text-muted); font-size:0.85rem;">Không có trigger nào nổ trong case này.</div>`;
+    container.innerHTML = `<div style="padding:12px; color:var(--text-muted); font-size:0.85rem;">Không có mốc nào.</div>`;
     if (metaDeck) metaDeck.style.display = "none";
     return;
   }
@@ -891,7 +893,7 @@ function renderTriggers(triggers) {
         <span style="font-family:monospace; margin-left:8px;">${timeSec}s</span>
         <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;">${tr.reason}</div>
       </div>
-      ${tr.evidence_minio_url ? `<button class="btn btn-show-evidence" data-url="${tr.evidence_minio_url}" data-reason="${tr.reason}" style="padding:3px 8px; font-size:0.75rem;">📸 Xem ảnh</button>` : ""}
+      ${tr.evidence_minio_url ? `<button class="btn btn-show-evidence btn-icon-sm" data-url="${tr.evidence_minio_url}" data-reason="${tr.reason}" title="Xem ảnh chụp bằng chứng">👁️ Ảnh</button>` : ""}
     `;
 
     item.addEventListener("click", (e) => {
@@ -1862,8 +1864,10 @@ async function loadDevices() {
       <td><span style="font-size:0.75rem; color:var(--text-muted);">${d.rtsp_sub_url || "Chưa có"}</span></td>
       <td><span class="trigger-tag tag-stable">${d.status}</span></td>
       <td>
-        <button class="btn btn-primary btn-select-live" data-id="${d.id}" style="padding:4px 8px;">🚀 Giám Sát</button>
-        <button class="btn btn-danger btn-del-dev" data-id="${d.id}" style="padding:4px 8px;">✕</button>
+        <div class="action-btn-group">
+          <button class="btn btn-primary btn-select-live btn-icon-sm" data-id="${d.id}" title="Bắt đầu xem trực tiếp">📡 Xem</button>
+          <button class="btn btn-danger btn-del-dev btn-icon-sm" data-id="${d.id}" title="Xóa Camera">🗑️</button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -2072,7 +2076,7 @@ function initVLMEvalWorkbench() {
       toast.error("Lỗi khi chạy VLM: " + err.message);
     } finally {
       btnRun.disabled = false;
-      btnRun.textContent = "🚀 Bắt Đầu Đánh Giá Với VLM";
+      btnRun.textContent = "🚀 Chạy Giám Định";
     }
   });
 
@@ -2200,31 +2204,30 @@ async function loadVLMEvalHistory(caseId) {
 
       let verdictBadge = "";
       if (fb.verdict === "useful_keyframe") {
-        verdictBadge = `<span class="trigger-tag tag-stable">✅ HỢP LỆ (VLM OK)</span>`;
+        verdictBadge = `<span class="trigger-tag tag-stable">✅ Hợp lệ</span>`;
       } else if (fb.verdict === "redundant_motion") {
-        verdictBadge = `<span class="trigger-tag tag-periodic">⚠️ TRÙNG LẶP (SPAM)</span>`;
+        verdictBadge = `<span class="trigger-tag tag-periodic">⚠️ Trùng</span>`;
       } else {
-        verdictBadge = `<span class="trigger-tag tag-spike">❌ MỜ NHÒE (BLUR)</span>`;
+        verdictBadge = `<span class="trigger-tag tag-spike">❌ Nhòe</span>`;
       }
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="font-family:monospace; font-weight:700;">${timeSec}s</td>
         <td>
-          ${evUrl ? `<img src="${evUrl}" style="width:70px; height:42px; object-fit:cover; border-radius:4px; border:1px solid var(--border-color); cursor:pointer;" class="vlm-thumb-preview" data-url="${evUrl}" data-desc="${fb.scene_description}">` : `<span style="font-size:0.75rem; color:var(--text-muted);">Không ảnh</span>`}
+          ${evUrl ? `<img src="${evUrl}" style="width:70px; height:42px; object-fit:cover; border-radius:4px; border:1px solid var(--border-color); cursor:pointer;" class="vlm-thumb-preview" data-url="${evUrl}" data-desc="${fb.scene_description}">` : `<span style="font-size:0.75rem; color:var(--text-muted);">--</span>`}
         </td>
         <td>
           <span class="trigger-tag ${trType.includes("STABLE") ? "tag-stable" : "tag-spike"}">${trType}</span>
-          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">${origTrig.reason || ""}</div>
         </td>
         <td style="font-family:monospace; font-weight:600; color:var(--accent-cyan);">${sharp}</td>
         <td>
-          <div style="font-size:0.84rem; font-weight:600; color:var(--text-primary);">${fb.worker_action.toUpperCase()}</div>
-          <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">${fb.scene_description}</div>
+          <div style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">${fb.worker_action.toUpperCase()}</div>
+          <div style="font-size:0.76rem; color:var(--text-secondary); margin-top:2px;">${fb.scene_description}</div>
         </td>
         <td>${verdictBadge}</td>
         <td>
-          <button class="btn btn-show-vlm-evidence" data-url="${evUrl}" data-desc="${fb.scene_description}" style="padding:3px 8px; font-size:0.75rem;">👁️ Xem</button>
+          <button class="btn btn-show-vlm-evidence btn-icon-sm" data-url="${evUrl}" data-desc="${fb.scene_description}" title="Xem ảnh phóng to">👁️ Ảnh</button>
         </td>
       `;
       tbody.appendChild(tr);

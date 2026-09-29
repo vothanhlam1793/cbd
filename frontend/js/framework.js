@@ -15,7 +15,8 @@ function renderBehaviorTimeline(rows) {
   }
   deck.replaceChildren();
   const title = document.createElement('h4');
-  title.textContent = 'Khối 2 · Các khoảng trạng thái (bấm để tua video)';
+  title.style.cssText = 'font-size:0.84rem; margin-bottom:6px; color:var(--text-secondary);';
+  title.innerHTML = '⏱️ Phân Đoạn Trạng Thái <span class="info-hint" title="Bấm vào từng khoảng thời gian để tua nhanh video tới đoạn đó">ⓘ</span>';
   deck.append(title);
   const segments = [];
   rows.forEach(row => {
@@ -24,10 +25,10 @@ function renderBehaviorTimeline(rows) {
     else segments.push({state: row.predicted_state, start: row.timestamp_ms, end: row.timestamp_ms});
   });
   const strip = document.createElement('div');
-  strip.style.cssText = 'display:flex;gap:6px;overflow:auto;max-height:100px';
+  strip.style.cssText = 'display:flex;gap:6px;overflow:auto;max-height:80px;padding-bottom:4px';
   segments.forEach(segment => {
     const button = document.createElement('button');
-    button.className = 'btn';
+    button.className = 'btn btn-icon-sm';
     button.style.flexShrink = '0';
     button.textContent = `${segment.state} · ${(segment.start / 1000).toFixed(1)}–${(segment.end / 1000).toFixed(1)}s`;
     button.onclick = () => { document.getElementById('main-video').currentTime = segment.start / 1000; };
@@ -40,7 +41,7 @@ async function initPluginWorkbench() {
   const oldCard = document.querySelector('#sub-case-tuning .param-card').closest('.card');
   oldCard.replaceChildren();
   oldCard.id = 'plugin-workbench';
-  oldCard.textContent = 'Đang tải danh mục thuật toán…';
+  oldCard.textContent = 'Đang tải thuật toán…';
   const run = document.getElementById('btn-submit-rerun');
   run.disabled = true;
   try {
@@ -50,9 +51,10 @@ async function initPluginWorkbench() {
     oldCard.replaceChildren();
     pluginGroups.forEach((group, index) => {
       const section = document.createElement('section');
-      section.style.cssText = 'padding:16px 0;border-bottom:1px solid #344054';
+      section.style.cssText = 'padding:12px 0;border-bottom:1px solid #30363d';
       const title = document.createElement('h3');
-      title.textContent = `Khối ${index + 1} · ${group} (${pluginCatalog[group].length} bộ)`;
+      title.style.cssText = 'font-size:0.9rem; margin-bottom:6px; color:var(--accent-cyan);';
+      title.textContent = `${index === 0 ? '📡 Khối 1 · Sensor Core' : '🧠 Khối 2 · Behavior Trigger'} (${pluginCatalog[group].length})`;
       const select = document.createElement('select');
       select.id = `plugin-${group}`;
       select.className = 'btn';
@@ -65,6 +67,7 @@ async function initPluginWorkbench() {
       });
       const form = document.createElement('div');
       form.id = `params-${group}`;
+      form.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;';
       select.onchange = () => renderPluginParams(group);
       section.append(title, select, form);
       oldCard.append(section);
@@ -72,20 +75,21 @@ async function initPluginWorkbench() {
     });
     if (pluginCatalog.errors.length) {
       const error = document.createElement('p');
-      error.textContent = 'Plugin không hợp lệ: ' + pluginCatalog.errors.map(x => `${x.plugin}: ${x.error}`).join('; ');
+      error.textContent = 'Plugin lỗi: ' + pluginCatalog.errors.map(x => `${x.plugin}: ${x.error}`).join('; ');
       oldCard.append(error);
     }
     const reset = document.createElement('button');
-    reset.className = 'btn';
-    reset.textContent = 'Khôi phục mặc định YAML';
+    reset.className = 'btn btn-icon-sm';
+    reset.style.marginTop = '10px';
+    reset.textContent = '↩ Mặc định YAML';
     reset.onclick = () => pluginGroups.forEach(g => renderPluginParams(g));
     oldCard.append(reset);
     syncPluginCase(pluginCase || window.currentCaseData);
-    run.textContent = '▶ Chạy Sensor → Behavior trên video gốc';
+    run.textContent = '▶ Chạy Pipeline';
     run.onclick = runPluginPipeline;
     document.getElementById('btn-view-tuned-studio').onclick = () => openCaseStudio(currentCaseId, true, true);
   } catch (error) {
-    oldCard.textContent = `Không tải được framework: ${error.message}. Hãy tải lại trang.`;
+    oldCard.textContent = `Lỗi tải framework: ${error.message}`;
   }
 }
 
@@ -95,19 +99,25 @@ function renderPluginParams(group, values = {}) {
   const form = document.getElementById(`params-${group}`);
   form.replaceChildren();
   if (!manifest) return;
-  const description = document.createElement('p');
-  description.textContent = manifest.description;
-  form.append(description);
   Object.entries(manifest.parameters).forEach(([key, spec]) => {
     const row = document.createElement('label');
-    row.style.cssText = 'display:block;margin:12px 0';
+    row.style.cssText = 'display:flex; flex-direction:column; gap:4px; font-size:0.78rem; background:#161b22; padding:6px 8px; border-radius:6px; border:1px solid #30363d;';
     const text = document.createElement('span');
-    text.textContent = `${spec.label}${spec.unit ? ` (${spec.unit})` : ''} `;
+    text.style.cssText = 'color:var(--text-secondary); font-weight:600; display:flex; justify-content:space-between; align-items:center;';
+    text.innerHTML = `<span>${spec.label}${spec.unit ? ` (${spec.unit})` : ''}</span>`;
+    if (spec.description) {
+      const hint = document.createElement('span');
+      hint.className = 'info-hint';
+      hint.textContent = 'ⓘ';
+      hint.title = spec.description;
+      text.appendChild(hint);
+    }
     const input = document.createElement(spec.type === 'enum' ? 'select' : 'input');
     input.dataset.parameter = key;
     input.dataset.type = spec.type;
     input.className = 'btn';
     input.style.width = '100%';
+    input.style.padding = '4px 6px';
     const value = values[key] ?? spec.default;
     if (spec.type === 'enum') {
       spec.options.forEach(value => input.add(new Option(value, value)));

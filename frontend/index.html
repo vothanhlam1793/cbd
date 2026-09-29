@@ -19,34 +19,34 @@
     </div>
 
     <ul class="sidebar-menu">
-      <li class="menu-item active" data-page="page-cases">
+      <li class="menu-item active" data-page="page-cases" title="Kho video, phòng soi sóng & cấu hình pipeline">
         <span class="menu-icon">📁</span>
-        <span class="menu-text">1. Kho Video & Soi Sensor</span>
+        <span class="menu-text">Video & Studio</span>
       </li>
-      <li class="menu-item" data-page="page-data-eval">
+      <li class="menu-item" data-page="page-data-eval" title="Chấm điểm mốc kích hoạt & quản lý kho nhãn">
         <span class="menu-icon">📊</span>
-        <span class="menu-text">2. Đánh Giá & Kho Nhãn</span>
+        <span class="menu-text">Đánh Giá & Nhãn</span>
       </li>
-      <li class="menu-item" data-page="page-vlm-eval">
+      <li class="menu-item" data-page="page-vlm-eval" title="Giám định chất lượng trigger bằng VLM">
         <span class="menu-icon">🤖</span>
-        <span class="menu-text">3. VLM Giám Định Mô Hình Toán</span>
+        <span class="menu-text">VLM Audit</span>
       </li>
-      <li class="menu-item" data-page="page-live">
+      <li class="menu-item" data-page="page-live" title="Giám sát và phân tích luồng camera trực tiếp">
         <span class="menu-icon">📡</span>
-        <span class="menu-text">4. Giám Sát Luồng Trực Tiếp</span>
+        <span class="menu-text">Live Stream</span>
       </li>
-      <li class="menu-item" data-page="page-devices">
+      <li class="menu-item" data-page="page-devices" title="Quản lý danh sách Camera Body">
         <span class="menu-icon">📹</span>
-        <span class="menu-text">Thiết Bị Camera Body</span>
+        <span class="menu-text">Camera Body</span>
       </li>
-      <li class="menu-item" data-page="page-settings">
+      <li class="menu-item" data-page="page-settings" title="Cấu hình hạ tầng hệ thống">
         <span class="menu-icon">⚙️</span>
-        <span class="menu-text">Cài Đặt Hệ Thống</span>
+        <span class="menu-text">Cài Đặt</span>
       </li>
     </ul>
 
     <div class="sidebar-footer">
-      <span class="status-indicator" id="ws-status-badge">🟡 Connecting WS...</span>
+      <span class="status-indicator" id="ws-status-badge" title="Trạng thái kết nối WebSocket">🟡 WS...</span>
       <span class="version-tag">v1.2.0</span>
     </div>
   </aside>
@@ -57,11 +57,11 @@
     <!-- TOP DEBUG & STATUS BAR -->
     <div style="background:#11151c; border-bottom:1px solid var(--border-color); padding:6px 20px; display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; color:var(--text-secondary);">
       <div style="display:flex; align-items:center; gap:16px;">
-        <span>🔗 <b>Current URI:</b> <code id="lbl-current-uri" style="color:var(--accent-cyan);">#/cases</code></span>
-        <span>⚡ <b>WS Latency:</b> <span id="lbl-ws-rtt" style="color:var(--accent-yellow); font-family:monospace;">-- ms</span></span>
+        <span title="Đường dẫn hiện tại">🔗 <code id="lbl-current-uri" style="color:var(--accent-cyan);">#/cases</code></span>
+        <span title="Độ trễ WebSocket">⚡ <span id="lbl-ws-rtt" style="color:var(--accent-yellow); font-family:monospace;">-- ms</span></span>
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
-        <button class="btn" id="btn-toggle-debug-drawer" style="padding:2px 8px; font-size:0.75rem;">🛠️ Debug Console</button>
+        <button class="btn" id="btn-toggle-debug-drawer" style="padding:2px 8px; font-size:0.75rem;" title="Mở/Đóng cửa sổ nhật ký hệ thống">🛠️ Console</button>
       </div>
     </div>
     
@@ -69,16 +69,16 @@
     <div id="page-cases" class="view-container active">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">📁 Kho Video & Phòng Soi Cảm Biến</span>
+          <span class="page-title">📁 Video & Studio</span>
           <ul class="sub-tabs">
-            <li><button class="sub-tab-btn active" data-sub="case-explorer">1. Danh Sách Video</button></li>
-            <li><button class="sub-tab-btn" data-sub="case-studio">2. Soi Sóng & Rich Metadata</button></li>
-            <li><button class="sub-tab-btn" data-sub="case-tuning">3. Cài Đặt Bộ Lọc Toán Học</button></li>
+            <li><button class="sub-tab-btn active" data-sub="case-explorer" title="Danh sách các video đã nạp">📋 Danh Sách</button></li>
+            <li><button class="sub-tab-btn" data-sub="case-studio" title="Phòng soi sóng cảm biến và sự kiện">🧪 Soi Sóng</button></li>
+            <li><button class="sub-tab-btn" data-sub="case-tuning" title="Cấu hình tham số pipeline 2 khối">⚙️ Cấu Hình</button></li>
           </ul>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button class="btn" id="btn-export-sensor-spec" style="background:#238636; color:#fff; font-weight:600;" title="Xuất JSON cấu hình bộ cảm biến và schema trigger cho Station-Body">📦 Xuất Đặc Tả Sensor JSON</button>
-          <button class="btn btn-primary" id="btn-open-upload-modal">📤 Nạp Video Mới</button>
+          <button class="btn" id="btn-export-sensor-spec" style="background:#238636; color:#fff; font-weight:600;" title="Xuất JSON cấu hình bộ cảm biến và schema trigger cho Station-Body">📦 Xuất Spec</button>
+          <button class="btn btn-primary" id="btn-open-upload-modal" title="Tải video mới lên để phân tích">📤 Nạp Video</button>
         </div>
       </div>
 
@@ -86,18 +86,18 @@
       <div id="sub-case-explorer" class="sub-view-content" style="padding-top:16px;">
         <div class="card">
           <div class="card-title">
-            <span>Danh Sách Các Case Phân Tích</span>
-            <button class="btn" id="btn-refresh-cases">🔄 Tải Lại</button>
+            <span>📋 Danh Sách Video</span>
+            <button class="btn" id="btn-refresh-cases" title="Làm mới danh sách">🔄 Tải lại</button>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>Mã Case</th>
+                <th>Mã</th>
                 <th>Tiêu Đề</th>
                 <th>Nguồn</th>
                 <th>Thời Lượng</th>
                 <th>FPS / Frames</th>
-                <th>Thời Điểm Tạo</th>
+                <th>Tạo Lúc</th>
                 <th>Triggers</th>
                 <th>Trạng Thái</th>
                 <th>Thao Tác</th>
@@ -125,22 +125,19 @@
             </div>
           </div>
           <div class="layout-toggle-group">
-            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; margin-right:4px;">Bố Cục:</span>
-            <button class="btn-layout active" id="btn-layout-split" title="Chia đôi màn hình: Video bên trái, Biểu đồ bên phải (Khuyên dùng)">⚡ Song Song</button>
-            <button class="btn-layout" id="btn-layout-stacked" title="Xếp tầng: Video trên, Biểu đồ bên dưới">📑 Xếp Tầng</button>
-            <button class="btn-layout" id="btn-layout-pip" title="Bật/Tắt cửa sổ Video Mini nổi khi cuộn">📌 Mini PiP</button>
+            <button class="btn-layout active" id="btn-layout-split" title="Chia đôi màn hình: Video bên trái, Biểu đồ bên phải">◫ Song Song</button>
+            <button class="btn-layout" id="btn-layout-stacked" title="Xếp tầng: Video trên, Biểu đồ bên dưới">☰ Xếp Tầng</button>
+            <button class="btn-layout" id="btn-layout-pip" title="Bật/Tắt cửa sổ Video Mini nổi">🗔 PiP</button>
           </div>
         </div>
 
         <!-- Studio Processing Banner -->
-        <div id="studio-processing-banner" style="display:none; background:#161f2e; border:1px solid var(--accent-orange); border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#f3f4f6; font-size:0.9rem;">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:1.4rem;">⚙️</span>
-              <div>
-                <div style="font-weight:700; color:var(--accent-orange);" id="studio-processing-text">Đang phân tích mô hình toán học trên video...</div>
-                <div style="font-size:0.8rem; color:var(--text-secondary);" id="studio-processing-subtext">Hệ thống đang trích xuất Optical Flow, FFT Cadence và đánh giá Trigger. Dữ liệu sẽ tự động cập nhật khi hoàn tất.</div>
-              </div>
+        <div id="studio-processing-banner" style="display:none; background:#161f2e; border:1px solid var(--accent-orange); border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#f3f4f6; font-size:0.86rem;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2rem;">⚙️</span>
+            <div>
+              <div style="font-weight:700; color:var(--accent-orange);" id="studio-processing-text">Đang phân tích video...</div>
+              <div style="font-size:0.76rem; color:var(--text-secondary);" id="studio-processing-subtext">Đang trích xuất Optical Flow, FFT Cadence & Trigger.</div>
             </div>
           </div>
         </div>
@@ -152,7 +149,7 @@
           <div class="studio-pane-video" id="pane-video">
             <div class="card">
               <div class="card-title">
-                <span>📹 Video Playback & Vector Overlay</span>
+                <span>📹 Video & Vector Overlay</span>
                 <span id="current-state-badge" class="metric-state state-stable">STABLE</span>
               </div>
               <div class="video-wrapper">
@@ -160,11 +157,11 @@
                 <canvas id="canvas-overlay"></canvas>
               </div>
               <div class="player-controls">
-                <button class="btn btn-primary" id="btn-play-pause">▶ Play</button>
+                <button class="btn btn-primary" id="btn-play-pause" title="Phát / Tạm dừng">▶ Play</button>
                 <button class="btn" id="btn-prev-frame" title="Lùi 1 Frame">⏪ -1F</button>
                 <button class="btn" id="btn-next-frame" title="Tiến 1 Frame">+1F ⏩</button>
                 <span id="time-display" style="font-family:monospace; font-size:0.88rem; margin-left:auto;">00:00.000 / 00:00.000</span>
-                <select class="btn" id="select-playback-rate" style="padding:4px 8px; font-size:0.8rem;">
+                <select class="btn" id="select-playback-rate" style="padding:4px 8px; font-size:0.8rem;" title="Tốc độ phát">
                   <option value="0.25">0.25x</option>
                   <option value="0.5">0.5x</option>
                   <option value="1.0" selected>1.0x</option>
@@ -176,31 +173,31 @@
             <!-- Instant Mathematical Metrics Badges -->
             <div class="card">
               <div class="card-title" style="margin-bottom:8px;">
-                <span>🔢 Chỉ Số Toán Học Frame Hiện Tại</span>
+                <span>🔢 Chỉ Số Frame Hiện Tại</span>
               </div>
               <div class="metrics-grid">
-                <div class="metric-box">
-                  <div class="metric-label">Tốc độ (Speed)</div>
+                <div class="metric-box" title="Vận tốc dịch chuyển toàn cục (px/frame)">
+                  <div class="metric-label">⚡ Vận tốc</div>
                   <div class="metric-value" id="val-speed">0.00 <span style="font-size:0.75rem">px/f</span></div>
                 </div>
-                <div class="metric-box">
-                  <div class="metric-label">Dịch chuyển (dx, dy)</div>
+                <div class="metric-box" title="Vector dịch chuyển ngang/dọc (dx, dy)">
+                  <div class="metric-label">✛ Dịch chuyển</div>
                   <div class="metric-value" id="val-dx-dy">0.0, 0.0</div>
                 </div>
-                <div class="metric-box">
-                  <div class="metric-label">Góc xoay (Rot)</div>
+                <div class="metric-box" title="Góc xoay khung hình">
+                  <div class="metric-label">↻ Xoay</div>
                   <div class="metric-value" id="val-rotation">0.00°</div>
                 </div>
-                <div class="metric-box">
-                  <div class="metric-label">Độ nét (Laplacian)</div>
+                <div class="metric-box" title="Độ nét Laplacian Variance">
+                  <div class="metric-label">✨ Độ nét</div>
                   <div class="metric-value" id="val-sharpness">0.0</div>
                 </div>
-                <div class="metric-box">
-                  <div class="metric-label">Tần số nhịp (FFT)</div>
+                <div class="metric-box" title="Tần số nhịp bước chân FFT">
+                  <div class="metric-label">〰️ Nhịp FFT</div>
                   <div class="metric-value" id="val-cadence">0.0 <span style="font-size:0.75rem">Hz</span></div>
                 </div>
-                <div class="metric-box">
-                  <div class="metric-label">Độ tin cậy (Conf)</div>
+                <div class="metric-box" title="Độ tin cậy RANSAC Inliers">
+                  <div class="metric-label">🎯 Tin cậy</div>
                   <div class="metric-value" id="val-confidence">100%</div>
                 </div>
               </div>
@@ -213,86 +210,86 @@
             <!-- Zoom & Timeline Controls Toolbar -->
             <div class="chart-timeline-toolbar">
               <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">🔍 Thu Phóng:</span>
-                <button class="btn-time-preset active" data-span="all">Toàn Bộ (100%)</button>
-                <button class="btn-time-preset" data-span="300">5 Phút</button>
-                <button class="btn-time-preset" data-span="60">1 Phút</button>
-                <button class="btn-time-preset" data-span="15">15 Giây</button>
-                <button class="btn-time-preset" data-span="5">5 Giây</button>
+                <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">🔍 Zoom:</span>
+                <button class="btn-time-preset active" data-span="all" title="Hiển thị toàn bộ thời lượng">Tất cả</button>
+                <button class="btn-time-preset" data-span="300" title="Cửa sổ 5 phút">5m</button>
+                <button class="btn-time-preset" data-span="60" title="Cửa sổ 1 phút">1m</button>
+                <button class="btn-time-preset" data-span="15" title="Cửa sổ 15 giây">15s</button>
+                <button class="btn-time-preset" data-span="5" title="Cửa sổ 5 giây">5s</button>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span id="lbl-zoom-window" style="font-family:monospace; font-size:0.75rem; color:var(--accent-cyan);">00:00 - 10:00</span>
-                <button class="btn" id="btn-reset-zoom" style="padding:2px 8px; font-size:0.75rem;">↩️ Reset</button>
+                <button class="btn" id="btn-reset-zoom" style="padding:2px 8px; font-size:0.75rem;" title="Đặt lại thu phóng">↩ Reset</button>
               </div>
             </div>
 
             <div class="chart-card">
               <div class="card-title">
-                <span>Khối 1 · Sensor Core — Sóng chuyển động ảnh</span>
-                <span style="font-size:0.75rem; color:var(--text-muted);">Kéo chuột để quét vùng phóng to • Lăn chuột để Zoom</span>
+                <span>📈 Khối 1 · Sóng Chuyển Động</span>
+                <span class="info-hint" title="Kéo chuột để quét vùng phóng to • Lăn chuột để Zoom">ⓘ</span>
               </div>
               <div id="chart-motion" style="width:100%; height:180px;"></div>
             </div>
 
             <div class="chart-card">
               <div class="card-title">
-                <span>Khối 2 · Nhịp chuyển động (đối chiếu độ nét từ Sensor)</span>
+                <span>📊 Khối 2 · Nhịp Bước & Độ Nét</span>
               </div>
               <div id="chart-cadence" style="width:100%; height:140px;"></div>
             </div>
 
             <div class="card">
               <div class="card-title">
-                <span>Khối 2 · Behavior & Trigger — Sự kiện và bằng chứng</span>
-                <span id="trigger-total-count" style="font-size:0.8rem; color:var(--text-muted);">0 Sự kiện</span>
+                <span>🎯 Khối 2 · Mốc Kích Hoạt (Triggers)</span>
+                <span id="trigger-total-count" style="font-size:0.8rem; color:var(--text-muted);">0 mốc</span>
               </div>
               
               <!-- Selected Trigger Rich Metadata Deck -->
-              <div id="trigger-metadata-deck" style="display:none; background:#11151c; border:1px solid var(--accent-cyan); border-radius:8px; padding:12px; margin-bottom:12px;">
+              <div id="trigger-metadata-deck" style="display:none; background:#11151c; border:1px solid var(--accent-cyan); border-radius:8px; padding:10px; margin-bottom:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-weight:700; color:var(--accent-cyan); font-size:0.88rem;">📦 Gói Siêu Dữ Liệu Của Mốc Đang Chọn</span>
+                  <span style="font-weight:700; color:var(--accent-cyan); font-size:0.84rem;">📦 Siêu Dữ Liệu Mốc</span>
                   <span id="deck-trigger-time" class="meta-badge">00:00.0s</span>
                 </div>
-                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; font-size:0.78rem; margin-bottom:8px;">
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Độ nét Laplacian:</div>
-                    <div id="deck-val-sharpness" style="font-weight:700; color:#fff;">--</div>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; font-size:0.76rem; margin-bottom:8px;">
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Độ nét Laplacian">
+                    <span style="color:var(--text-muted);">✨ Nét:</span>
+                    <b id="deck-val-sharpness" style="color:#fff; float:right;">--</b>
                   </div>
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Tỷ lệ che ống kính:</div>
-                    <div id="deck-val-occlusion" style="font-weight:700; color:var(--accent-yellow);">--%</div>
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Tỷ lệ che ống kính">
+                    <span style="color:var(--text-muted);">🙈 Che:</span>
+                    <b id="deck-val-occlusion" style="color:var(--accent-yellow); float:right;">--%</b>
                   </div>
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Thời gian dừng yên:</div>
-                    <div id="deck-val-dwell" style="font-weight:700; color:var(--accent-green);">--s</div>
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Thời gian dừng yên">
+                    <span style="color:var(--text-muted);">⏱️ Dừng:</span>
+                    <b id="deck-val-dwell" style="color:var(--accent-green); float:right;">--s</b>
                   </div>
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Vận tốc quay đầu:</div>
-                    <div id="deck-val-yaw" style="font-weight:700; color:#fff;">-- px/s</div>
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Vận tốc quay đầu">
+                    <span style="color:var(--text-muted);">↻ Quay:</span>
+                    <b id="deck-val-yaw" style="color:#fff; float:right;">-- px/s</b>
                   </div>
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Độ ổn định trước cú dừng:</div>
-                    <div id="deck-val-pre-stability" style="font-weight:700; color:#fff;">--</div>
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Độ ổn định trước cú dừng">
+                    <span style="color:var(--text-muted);">🛡️ Ổn định:</span>
+                    <b id="deck-val-pre-stability" style="color:#fff; float:right;">--</b>
                   </div>
-                  <div style="background:#161b22; padding:6px; border-radius:4px;">
-                    <div style="color:var(--text-muted);">Trạng thái nhịp bước:</div>
-                    <div id="deck-val-state" style="font-weight:700; color:var(--accent-cyan);">--</div>
+                  <div style="background:#161b22; padding:5px 8px; border-radius:4px;" title="Trạng thái nhịp bước">
+                    <span style="color:var(--text-muted);">👣 Nhịp:</span>
+                    <b id="deck-val-state" style="color:var(--accent-cyan); float:right;">--</b>
                   </div>
                 </div>
 
                 <!-- Quick Ground Truth Labeling Bar in Studio -->
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; background:#0d1117; border:1px solid var(--border-color); border-radius:6px; padding:8px; margin-bottom:8px;">
-                  <span style="font-size:0.76rem; font-weight:700; color:var(--text-secondary);">🏷️ Gán Nhãn Vào Kho Train:</span>
-                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button class="btn btn-studio-label" data-label="STABLE_INSPECTION" style="padding:3px 8px; font-size:0.75rem; background:#238636; color:#fff;">👍 Inspection</button>
-                    <button class="btn btn-studio-label" data-label="PATROL_WALKING" style="padding:3px 8px; font-size:0.75rem;">🚶 Đi Bộ</button>
-                    <button class="btn btn-studio-label" data-label="HIGH_MOTION" style="padding:3px 8px; font-size:0.75rem;">⚡ Rung Giật</button>
-                    <button class="btn btn-studio-label" data-label="LENS_OCCLUDED_OR_BLUR" style="padding:3px 8px; font-size:0.75rem;">🙈 Che Áo / Mờ</button>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; background:#0d1117; border:1px solid var(--border-color); border-radius:6px; padding:6px 8px; margin-bottom:6px;">
+                  <span style="font-size:0.75rem; font-weight:600; color:var(--text-secondary);">🏷️ Gán nhãn:</span>
+                  <div class="action-btn-group">
+                    <button class="btn btn-studio-label btn-icon-sm" data-label="STABLE_INSPECTION" style="background:#238636; color:#fff;" title="Xác nhận đúng lúc dừng quan sát">👍 Chuẩn</button>
+                    <button class="btn btn-studio-label btn-icon-sm" data-label="PATROL_WALKING" title="Đang đi bộ tuần tra">🚶 Đi bộ</button>
+                    <button class="btn btn-studio-label btn-icon-sm" data-label="HIGH_MOTION" title="Vung tay hoặc rung giật">⚡ Rung</button>
+                    <button class="btn btn-studio-label btn-icon-sm" data-label="LENS_OCCLUDED_OR_BLUR" title="Bị che áo hoặc nhòe mờ">🙈 Che/Mờ</button>
                   </div>
                 </div>
 
-                <details style="font-size:0.75rem; color:var(--text-secondary); cursor:pointer;">
-                  <summary style="font-weight:600; color:var(--accent-cyan); outline:none;">🔍 Xem Chi Tiết JSON Payload Gửi Lên Hệ Thống Sau</summary>
+                <details style="font-size:0.74rem; color:var(--text-secondary); cursor:pointer;">
+                  <summary style="font-weight:600; color:var(--accent-cyan); outline:none;">🔍 JSON Payload</summary>
                   <pre id="deck-json-payload" style="background:#090d13; padding:8px; border-radius:4px; margin-top:6px; overflow-x:auto; font-family:monospace; max-height:140px;"></pre>
                 </details>
               </div>
@@ -308,7 +305,7 @@
         <!-- Floating PiP Mini Video Player (for scrolling in Stacked mode) -->
         <div id="pip-mini-video-box" class="pip-mini-video-box">
           <div class="pip-header">
-            <span>📹 Mini Video View</span>
+            <span>📹 Mini PiP</span>
             <button class="collapse-btn" id="btn-close-pip" style="padding:0 4px; font-size:0.75rem;">✕</button>
           </div>
           <video id="pip-video" playsinline muted></video>
@@ -322,13 +319,13 @@
         <!-- Tuning Case Banner -->
         <div class="studio-header-bar" style="margin-bottom:16px;">
           <div class="studio-meta-info">
-            <h2 id="tuning-case-title" style="font-size:1.15rem; font-weight:700; color:var(--text-primary); margin:0;">⚙️ Tinh Chỉnh Case: Chưa chọn</h2>
+            <h2 id="tuning-case-title" style="font-size:1.15rem; font-weight:700; color:var(--text-primary); margin:0;">⚙️ Pipeline · Chưa chọn</h2>
             <div class="meta-badges" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">
-              <span class="meta-badge" id="tuning-meta-id">Case: --</span>
+              <span class="meta-badge" id="tuning-meta-id">--</span>
               <span class="meta-badge" id="tuning-meta-fps">🎞️ -- fps</span>
               <span class="meta-badge" id="tuning-meta-duration">⏱️ --:--</span>
               <span class="meta-badge" id="tuning-meta-triggers">🎯 -- triggers</span>
-              <span class="meta-badge" id="tuning-meta-status">Trạng thái: Sẵn sàng</span>
+              <span class="meta-badge" id="tuning-meta-status">Sẵn sàng</span>
             </div>
           </div>
         </div>
@@ -338,34 +335,28 @@
           <!-- Left: Parameter Tuning Sliders with Live Value & Guidelines -->
           <div class="card">
             <div class="card-title">
-              <span>⚙️ Bảng Cài Đặt Tham Số Mô Hình Toán Cảm Biến</span>
-              <button class="btn" id="btn-reset-tuning-defaults" style="font-size:0.78rem; padding:3px 8px;">↩️ Khôi Phục Mặc Định</button>
+              <span>⚙️ Cấu Hình Tham Số</span>
+              <button class="btn" id="btn-reset-tuning-defaults" style="font-size:0.78rem; padding:3px 8px;">↩ Mặc định</button>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
               <!-- Param 0: Profile Selector -->
               <div class="param-card" style="border-left: 3px solid var(--accent-cyan);">
                 <div class="param-header">
-                  <span class="param-title">🎯 Chế Độ Cảm Biến (Sensor Profile)</span>
-                  <span class="param-badge" id="val-badge-profile" style="background:var(--accent-cyan); color:#000; font-weight:700;">Station-Body Sensor</span>
+                  <span class="param-title">🎯 Chế độ Sensor <span class="info-hint" title="Inspection: Chỉ bắt khi dừng quan sát >=0.8s, ức chế lúc đi bộ">ⓘ</span></span>
+                  <span class="param-badge" id="val-badge-profile" style="background:var(--accent-cyan); color:#000; font-weight:700;">Station-Body</span>
                 </div>
-                <div class="param-desc">
-                  <b>Inspection Sensor:</b> Chỉ bắt khi kỹ sư dừng quan sát hiện trường $\ge 0.8s - 1.5s$, ức chế khi đang sải bước chân hoặc văng giật.
-                </div>
-                <select id="tune-profile" class="btn" style="width:100%; margin-top:6px; font-weight:600;">
-                  <option value="inspection_sensor" selected>🎯 Inspection Sensor Mode (Chuẩn Station-Body: Lọc che áo, lọc rung, bắt đỉnh nét)</option>
-                  <option value="research_lab">🔬 Research Lab Mode (Nghiên cứu sóng thô: Kích hoạt toàn bộ mảng sóng)</option>
+                <select id="tune-profile" class="btn" style="width:100%; margin-top:4px; font-weight:600;">
+                  <option value="inspection_sensor" selected>🎯 Inspection Sensor (Lọc che áo, bắt đỉnh nét)</option>
+                  <option value="research_lab">🔬 Research Lab (Sóng thô)</option>
                 </select>
               </div>
 
               <!-- Param 1: Max Corners -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">1. Độ Nhạy Bắt Chuyển Động (Max Corners)</span>
+                  <span class="param-title">1. Điểm đặc trưng (Corners) <span class="info-hint" title="Số điểm tương phản tối đa để đo Optical Flow">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-max-corners">150 điểm</span>
-                </div>
-                <div class="param-desc">
-                  Số điểm đặc trưng tương phản tối đa để đo dòng quang học (Optical Flow). Tăng lên khi môi trường trơn ít góc cạnh.
                 </div>
                 <input type="range" id="tune-max-corners" class="param-slider" min="40" max="350" step="10" value="150">
               </div>
@@ -373,11 +364,8 @@
               <!-- Param 2: Time Window -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">2. Thời Gian Đứng Yên Tối Thiểu (Window Size)</span>
+                  <span class="param-title">2. Cửa sổ dừng (Window) <span class="info-hint" title="Thời gian giữ yên liên tục để xác nhận quan sát">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-window-sec">0.8 giây</span>
-                </div>
-                <div class="param-desc">
-                  Thời gian giữ yên góc nhìn liên tục để xác nhận kỹ sư đang quan sát sự việc.
                 </div>
                 <input type="range" id="tune-window-sec" class="param-slider" min="0.5" max="3.0" step="0.1" value="0.8">
               </div>
@@ -385,11 +373,8 @@
               <!-- Param 3: Stable Threshold -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">3. Ngưỡng Vận Tốc Đứng Yên (Stable Speed Threshold)</span>
+                  <span class="param-title">3. Ngưỡng vận tốc (Speed) <span class="info-hint" title="Vận tốc dịch chuyển nhỏ hơn mức này được tính là đứng yên">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-stable-thresh">1.2 px/f</span>
-                </div>
-                <div class="param-desc">
-                  Nếu vận tốc dịch chuyển nhỏ hơn mức này, mô hình toán kết luận camera đang đứng yên.
                 </div>
                 <input type="range" id="tune-stable-thresh" class="param-slider" min="0.4" max="3.5" step="0.1" value="1.2">
               </div>
@@ -397,11 +382,8 @@
               <!-- Param 4: Min Sharpness -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">4. Ngưỡng Độ Nét Chấp Nhận (Min Laplacian Sharpness)</span>
+                  <span class="param-title">4. Độ nét tối thiểu (Sharpness) <span class="info-hint" title="Độ nét Laplacian tối thiểu để loại ảnh mờ">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-min-sharpness">150.0</span>
-                </div>
-                <div class="param-desc">
-                  Độ nét tối thiểu để coi là ảnh chuẩn. Loại bỏ hoàn toàn các khung hình nhòe mờ.
                 </div>
                 <input type="range" id="tune-min-sharpness" class="param-slider" min="30" max="500" step="10" value="150">
               </div>
@@ -409,11 +391,8 @@
               <!-- Param 5: Max Occlusion -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">5. Ngưỡng Che Ống Kính Tối Đa (Max Occlusion Ratio)</span>
+                  <span class="param-title">5. Tỷ lệ che tối đa (Occlusion) <span class="info-hint" title="Tỷ lệ diện tích tối đa bị che khuất trước khi loại bỏ frame">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-occlusion">30%</span>
-                </div>
-                <div class="param-desc">
-                  Tỷ lệ diện tích tối đa bị cánh tay áo hoặc vật cản phẳng che khuất. Nếu lớn hơn mức này $\rightarrow$ Tự động loại bỏ frame.
                 </div>
                 <input type="range" id="tune-max-occlusion" class="param-slider" min="0.10" max="0.60" step="0.05" value="0.30">
               </div>
@@ -421,11 +400,8 @@
               <!-- Param 6: Cooldown -->
               <div class="param-card">
                 <div class="param-header">
-                  <span class="param-title">6. Thời Gian Nghỉ Chống Chụp Trùng Lặp (Cooldown)</span>
+                  <span class="param-title">6. Giãn cách (Cooldown) <span class="info-hint" title="Thời gian nghỉ tối thiểu giữa 2 lần kích hoạt liên tiếp">ⓘ</span></span>
                   <span class="param-badge" id="val-badge-cooldown-sec">15.0 giây</span>
-                </div>
-                <div class="param-desc">
-                  Khoảng thời gian nghỉ tối thiểu giữa 2 lần kích hoạt liên tiếp cùng 1 góc nhìn.
                 </div>
                 <input type="range" id="tune-cooldown-sec" class="param-slider" min="3.0" max="60.0" step="1.0" value="15.0">
               </div>
@@ -435,22 +411,18 @@
           <!-- Right: Action & Live Progress & Diff Benchmark -->
           <div class="card" style="display:flex; flex-direction:column; gap:14px;">
             <div class="card-title">
-              <span>🚀 Bắt Đầu Mô Phỏng & Đo Hiệu Năng</span>
+              <span>🚀 Thực Thi & Đo Hiệu Năng</span>
               <span id="tuning-status-tag" class="trigger-tag tag-stable">SẴN SÀNG</span>
             </div>
 
-            <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.5;">
-              Hệ thống sẽ chạy lại thuật toán trên file video gốc của case này với bộ tham số mới, ghi lại mảng telemetry mới và đối chiếu kết quả.
-            </p>
-
-            <button class="btn btn-success" id="btn-submit-rerun" style="padding:10px 16px; font-size:0.95rem; font-weight:700;">
-              🔄 Bắt Đầu Tính Lại Case Với Bộ Tham Số Mới
+            <button class="btn btn-success" id="btn-submit-rerun" style="padding:10px 16px; font-size:0.95rem; font-weight:700;" title="Chạy lại pipeline trên video gốc với tham số mới">
+              ▶ Chạy Pipeline
             </button>
 
             <!-- Real-time Progress Bar Box -->
             <div id="tuning-progress-box" class="progress-container" style="display:none;">
               <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:600;">
-                <span id="tuning-progress-label">⚙️ Đang tính toán toán học...</span>
+                <span id="tuning-progress-label">⚙️ Đang xử lý...</span>
                 <span id="tuning-progress-percent" style="color:var(--accent-cyan);">0%</span>
               </div>
               <div class="progress-track">
@@ -458,22 +430,22 @@
               </div>
               <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:var(--text-muted); font-family:monospace;">
                 <span id="tuning-progress-frames">Frame: 0 / 0</span>
-                <span id="tuning-progress-fps">Tốc độ: -- FPS</span>
-                <span id="tuning-progress-elapsed">Thời gian: 0.0s</span>
+                <span id="tuning-progress-fps">-- FPS</span>
+                <span id="tuning-progress-elapsed">0.0s</span>
               </div>
             </div>
 
             <!-- Diff Benchmark Comparison Summary Box -->
             <div id="tuning-diff-box" style="display:none; background:#161b22; border:1px solid var(--border-color); border-radius:8px; padding:12px;">
-              <div style="font-size:0.88rem; font-weight:700; color:var(--accent-cyan); margin-bottom:8px;">
-                📊 Tổng Kết Kết Quả So Sánh (Benchmark Diff)
+              <div style="font-size:0.86rem; font-weight:700; color:var(--accent-cyan); margin-bottom:8px;">
+                📊 So Sánh Kết Quả (Diff)
               </div>
               <table class="diff-table">
                 <thead>
                   <tr>
                     <th>Chỉ Số</th>
-                    <th>Trước Đây</th>
-                    <th>Vừa Tính Xong</th>
+                    <th>Trước</th>
+                    <th>Mới</th>
                   </tr>
                 </thead>
                 <tbody id="tuning-diff-tbody">
@@ -481,8 +453,8 @@
                 </tbody>
               </table>
 
-              <div style="margin-top:14px; text-align:right;">
-                <button class="btn btn-primary" id="btn-view-tuned-studio">👉 Mở Replay Studio Xem Biểu Đồ Mới</button>
+              <div style="margin-top:12px; text-align:right;">
+                <button class="btn btn-primary" id="btn-view-tuned-studio">🧪 Xem Studio</button>
               </div>
             </div>
 
@@ -496,19 +468,19 @@
     <div id="page-devices" class="view-container">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">📹 Danh Sách Camera Body Dahua</span>
+          <span class="page-title">📹 Camera Body</span>
         </div>
-        <button class="btn btn-primary" id="btn-open-add-device-modal">+ Thêm Camera Mới</button>
+        <button class="btn btn-primary" id="btn-open-add-device-modal">+ Thêm Camera</button>
       </div>
       <div style="padding-top:16px;">
         <div class="card">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Mã Thiết Bị</th>
+                <th>Mã</th>
                 <th>Tên Camera</th>
-                <th>Vị Trí / Công Trường</th>
-                <th>Nhân Sự Phụ Trách</th>
+                <th>Vị Trí</th>
+                <th>Nhân Sự</th>
                 <th>RTSP Substream</th>
                 <th>Trạng Thái</th>
                 <th>Thao Tác</th>
@@ -526,12 +498,12 @@
     <div id="page-live" class="view-container">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">🚀 Giám Sát Trực Tiếp & Phân Tích Real-Time</span>
+          <span class="page-title">📡 Live Stream</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
-          <button class="btn btn-danger" id="btn-start-live">🔴 Bắt Đầu Ghi Hình & Tạo Case</button>
-          <button class="btn btn-primary" id="btn-stop-live" style="display:none;">⏹ Dừng & Đóng Gói Thành Case</button>
-          <span id="live-recording-timer" style="font-family:monospace; color:var(--accent-red); font-weight:700; display:none;">🔴 RECORDING: 00:00</span>
+          <button class="btn btn-danger" id="btn-start-live" title="Ghi hình luồng trực tiếp và đóng gói thành Case">🔴 Ghi Hình</button>
+          <button class="btn btn-primary" id="btn-stop-live" style="display:none;">⏹ Dừng & Lưu</button>
+          <span id="live-recording-timer" style="font-family:monospace; color:var(--accent-red); font-weight:700; display:none;">🔴 REC 00:00</span>
         </div>
       </div>
       <div style="padding-top:16px;">
@@ -541,7 +513,7 @@
           <div class="studio-pane-video">
             <div class="card">
               <div class="card-title">
-                <span id="live-camera-title">📹 Trực Tiếp Từ Camera IPC (Substream)</span>
+                <span id="live-camera-title">📹 Luồng Camera IPC</span>
                 <span id="live-camera-status" class="trigger-tag tag-stable">PREVIEW</span>
               </div>
               <div class="video-wrapper">
@@ -549,48 +521,48 @@
                 <canvas id="live-canvas-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
               </div>
               <div style="display:flex; gap:10px; margin-top:12px; align-items:center;">
-                <label style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap;">Chọn Camera:</label>
+                <label style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;">Camera:</label>
                 <select id="live-select-device" class="btn" style="flex:1; padding:6px 10px;">
                   <!-- Populated with devices -->
                 </select>
-                <input type="text" id="live-session-title" class="btn" style="flex:1.2; padding:6px 10px;" placeholder="Tên phiên (Tùy chọn)">
+                <input type="text" id="live-session-title" class="btn" style="flex:1.2; padding:6px 10px;" placeholder="Tên phiên ghi (tùy chọn)">
               </div>
             </div>
 
             <!-- Instant Mathematical Metrics Badges -->
             <div class="card">
               <div class="card-title" style="margin-bottom:8px;">
-                <span>🔢 Chỉ Số Toán Học Tức Thời (Real-Time HUD)</span>
+                <span>🔢 Chỉ Số Trực Tiếp (HUD)</span>
                 <span id="live-val-state-badge" class="metric-state state-stable">STABLE</span>
               </div>
               <div class="metrics-grid">
                 <div class="metric-box">
-                  <div class="metric-label">Tốc độ rung</div>
+                  <div class="metric-label">⚡ Vận tốc</div>
                   <div class="metric-value" id="live-val-speed">0.00 <span style="font-size:0.75rem">px/f</span></div>
                 </div>
                 <div class="metric-box">
-                  <div class="metric-label">Độ nét (Sharpness)</div>
+                  <div class="metric-label">✨ Độ nét</div>
                   <div class="metric-value" id="live-val-sharpness">0.0</div>
                 </div>
                 <div class="metric-box">
-                  <div class="metric-label">Tần số nhịp FFT</div>
+                  <div class="metric-label">〰️ Nhịp FFT</div>
                   <div class="metric-value" id="live-val-cadence">0.00 <span style="font-size:0.75rem">Hz</span></div>
                 </div>
                 <div class="metric-box">
-                  <div class="metric-label">Độ tin cậy</div>
+                  <div class="metric-label">🎯 Tin cậy</div>
                   <div class="metric-value" id="live-val-conf">100%</div>
                 </div>
                 <div class="metric-box">
-                  <div class="metric-label">Dịch chuyển (dx, dy)</div>
+                  <div class="metric-label">✛ Dịch chuyển</div>
                   <div class="metric-value" id="live-val-dxdy">0.0, 0.0</div>
                 </div>
                 <div class="metric-box">
-                  <div class="metric-label">Trạng thái ước tính</div>
+                  <div class="metric-label">Trạng thái</div>
                   <div class="metric-value" id="live-val-state" style="font-size:0.95rem; color:var(--accent-cyan);">STABLE</div>
                 </div>
               </div>
-              <div id="live-monitor-status" style="margin-top:10px; font-family:monospace; font-size:0.8rem; color:var(--text-secondary); background:#11151c; padding:8px 12px; border-radius:6px; border:1px solid var(--border-color);">
-                • Luồng dữ liệu: Đang lắng nghe gói tin Telemetry từ camera...
+              <div id="live-monitor-status" style="margin-top:10px; font-family:monospace; font-size:0.78rem; color:var(--text-secondary); background:#11151c; padding:6px 10px; border-radius:6px; border:1px solid var(--border-color);">
+                • Đang lắng nghe Telemetry...
               </div>
             </div>
           </div>
@@ -600,27 +572,27 @@
             
             <div class="chart-card">
               <div class="card-title">
-                <span>📈 Đồ Thị Tốc Độ Rung Lắc Real-Time (Cửa Sổ Trượt 30s)</span>
-                <span style="font-size:0.78rem; color:var(--accent-cyan);">⚡ Cập nhật theo thời gian thực</span>
+                <span>📈 Sóng Chuyển Động (30s)</span>
+                <span style="font-size:0.75rem; color:var(--accent-cyan);">⚡ Real-time</span>
               </div>
               <div id="live-chart-motion" style="width:100%; height:180px;"></div>
             </div>
 
             <div class="chart-card">
               <div class="card-title">
-                <span>📊 Đồ Thị Độ Nét (Sharpness) & Tần Số Bước Chân (Hz)</span>
+                <span>📊 Độ Nét & Nhịp Bước (Hz)</span>
               </div>
               <div id="live-chart-cadence" style="width:100%; height:140px;"></div>
             </div>
 
             <div class="card">
               <div class="card-title">
-                <span>🎯 Nhật Ký Trạng Thái & Sự Kiện Trực Tiếp</span>
-                <span id="live-event-count" style="font-size:0.78rem; color:var(--text-muted);">0 Sự kiện</span>
+                <span>🎯 Sự Kiện Trực Tiếp</span>
+                <span id="live-event-count" style="font-size:0.78rem; color:var(--text-muted);">0 mốc</span>
               </div>
               <div class="trigger-list-container" id="live-event-log-list" style="max-height:220px;">
-                <div style="padding:12px; color:var(--text-muted); font-size:0.85rem; text-align:center;">
-                  Đang theo dõi luồng trực tiếp. Các mốc dừng/đi bộ sẽ xuất hiện tại đây...
+                <div style="padding:12px; color:var(--text-muted); font-size:0.82rem; text-align:center;">
+                  Chờ sự kiện từ luồng trực tiếp...
                 </div>
               </div>
             </div>
@@ -635,51 +607,51 @@
     <div id="page-data-eval" class="view-container">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">📊 Đánh Giá Kết Quả & Kho Nhãn Dữ Liệu Huấn Luyện</span>
+          <span class="page-title">📊 Đánh Giá & Nhãn</span>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <button class="btn" id="btn-sync-vlm-to-eval" style="background:#1f6feb; color:#fff;" title="Chuyển kết quả giám định của Gemini 3.7 thành nhãn huấn luyện">⚡ Đồng Bộ Nhãn Từ VLM</button>
-          <button class="btn" id="btn-export-dataset-json" style="background:#238636; color:#fff;" title="Tải file JSON chứa đầy đủ vector đặc trưng 1s và nhãn để nạp cho OpenCode/ML script">📥 Xuất Dataset JSON</button>
-          <button class="btn" id="btn-export-dataset-csv" style="background:#30363d; color:#fff;" title="Tải file CSV cho pandas / scikit-learn">📄 Xuất Dataset CSV</button>
+        <div class="header-actions">
+          <button class="btn btn-icon-sm" id="btn-sync-vlm-to-eval" style="background:#1f6feb; color:#fff;" title="Đồng bộ kết quả Gemini thành ground-truth">⚡ Đồng bộ VLM</button>
+          <button class="btn btn-icon-sm" id="btn-export-dataset-json" style="background:#238636; color:#fff;" title="Tải file JSON dataset kèm 18 đặc trưng">📥 Xuất JSON</button>
+          <button class="btn btn-icon-sm" id="btn-export-dataset-csv" style="background:#30363d; color:#fff;" title="Tải file CSV cho pandas / scikit-learn">📄 Xuất CSV</button>
         </div>
       </div>
 
-      <div style="padding-top:16px; display:flex; flex-direction:column; gap:16px;">
+      <div style="padding-top:16px; display:flex; flex-direction:column; gap:14px;">
         
         <!-- Controls & Case Selector Card -->
         <div class="card">
           <div class="card-title">
-            <span>🎯 Chọn Case Video & Tổng Quan Dữ Liệu Đo Đạc</span>
-            <div style="display:flex; gap:8px;">
-              <span class="meta-badge" id="eval-badge-total-trig">🎯 0 triggers</span>
-              <span class="meta-badge" id="eval-badge-labeled" style="background:var(--accent-green); color:#000; font-weight:700;">🏷️ 0 đã gán nhãn</span>
+            <span>🎯 Chọn Case & Phân Bố Sóng</span>
+            <div style="display:flex; gap:6px;">
+              <span class="meta-badge" id="eval-badge-total-trig">0 mốc</span>
+              <span class="meta-badge" id="eval-badge-labeled" style="background:var(--accent-green); color:#000; font-weight:700;">0 đã nhãn</span>
             </div>
           </div>
           <div style="display:grid; grid-template-columns: 1fr 1.6fr; gap:16px; align-items:start;">
             <div>
-              <label style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">Chọn Case để chấm điểm kết quả:</label>
-              <select id="eval-select-case" class="btn" style="width:100%; margin-top:6px; font-weight:600;">
-                <option value="" disabled selected>-- Đang nạp danh sách Case... --</option>
+              <label style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Case cần đánh giá:</label>
+              <select id="eval-select-case" class="btn" style="width:100%; margin-top:4px; font-weight:600;">
+                <option value="" disabled selected>-- Chọn Case --</option>
               </select>
-              <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted); line-height:1.5;">
-                💡 <b>Mẹo:</b> Khi xem video phát hiện mốc đúng/sai, bạn bấm nút nhãn tương ứng. Hệ thống sẽ trích xuất vector 18 đặc trưng trong cửa sổ 1 giây quanh mốc đó và lưu vào CSDL để OpenCode train model.
+              <div style="margin-top:8px; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+                <span class="info-hint" style="margin-left:0; margin-right:4px;">ⓘ</span>Bấm nút nhãn tương ứng ở bảng bên dưới để lưu mẫu 1s vào dataset huấn luyện.
               </div>
             </div>
 
             <!-- Feature Distribution Breakdown across States -->
             <div style="background:#161b22; border:1px solid var(--border-color); border-radius:6px; padding:10px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:0.82rem; font-weight:700; color:var(--accent-cyan);">🔬 Phân Bố Đặc Trưng Đo Đạc Của Case Này</span>
-                <button class="btn" id="btn-copy-feature-dist" style="font-size:0.75rem; padding:2px 8px;">📋 Copy Số Liệu Cho OpenCode</button>
+                <span style="font-size:0.8rem; font-weight:700; color:var(--accent-cyan);">🔬 Thống Kê Đặc Trưng Trạng Thái</span>
+                <button class="btn btn-icon-sm" id="btn-copy-feature-dist" title="Copy số liệu thống kê vào clipboard">📋 Copy số liệu</button>
               </div>
-              <table class="data-table" style="font-size:0.76rem;">
+              <table class="data-table compact-table" style="font-size:0.75rem;">
                 <thead>
                   <tr>
                     <th>Trạng Thái</th>
                     <th>Số Frame</th>
                     <th>Vận Tốc Trung Bình</th>
-                    <th>Dao Động Nảy (|dy|)</th>
-                    <th>Độ Nét Laplacian</th>
+                    <th>Nảy (|dy|)</th>
+                    <th>Độ Nét</th>
                   </tr>
                 </thead>
                 <tbody id="eval-distribution-tbody">
@@ -693,36 +665,36 @@
         <!-- Candidate Triggers Inspection & 1-Click Labeling Table -->
         <div class="card">
           <div class="card-title">
-            <span>🔍 Bảng Đối Soát Mốc Kích Hoạt & Chấm Điểm 1-Click (Trigger Inspector)</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:0.8rem; color:var(--text-muted);">Lọc theo nhãn:</span>
-              <select id="eval-filter-label" class="btn" style="font-size:0.78rem; padding:3px 8px;">
-                <option value="ALL">Tất cả mốc</option>
-                <option value="UNLABELED" selected>Chưa gán nhãn</option>
-                <option value="STABLE_INSPECTION">Inspection (Đúng)</option>
-                <option value="PATROL_WALKING">Đi Bộ Tuần Tra</option>
-                <option value="HIGH_MOTION">Rung Giật Mạnh</option>
-                <option value="LENS_OCCLUDED_OR_BLUR">Che Áo / Nhòe Mờ</option>
+            <span>🔍 Mốc Kích Hoạt & Gán Nhãn</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:0.78rem; color:var(--text-muted);">Lọc:</span>
+              <select id="eval-filter-label" class="btn btn-icon-sm">
+                <option value="ALL">Tất cả</option>
+                <option value="UNLABELED" selected>Chưa nhãn</option>
+                <option value="STABLE_INSPECTION">Inspection</option>
+                <option value="PATROL_WALKING">Đi bộ</option>
+                <option value="HIGH_MOTION">Rung giật</option>
+                <option value="LENS_OCCLUDED_OR_BLUR">Che/Mờ</option>
               </select>
             </div>
           </div>
           
           <div style="overflow-x:auto; max-height:480px;">
-            <table class="data-table" style="font-size:0.8rem;">
+            <table class="data-table compact-table" style="font-size:0.78rem;">
               <thead>
                 <tr>
-                  <th style="width:40px;">#</th>
-                  <th style="width:85px;">Keyframe</th>
-                  <th style="width:90px;">Thời Gian</th>
-                  <th style="width:110px;">Dự Đoán CV</th>
-                  <th>Chỉ Số Đo Đạc Tức Thời</th>
-                  <th>Đặc Trưng Cửa Sổ 1.0s (1D Features)</th>
-                  <th style="width:130px;">Nhãn Hiện Tại</th>
-                  <th style="min-width:240px;">Chấm Điểm Nhanh (Gán Nhãn)</th>
+                  <th style="width:30px;">#</th>
+                  <th style="width:75px;">Ảnh</th>
+                  <th style="width:80px;">Thời Gian</th>
+                  <th style="width:85px;">Dự Đoán</th>
+                  <th>Đo Tức Thời</th>
+                  <th>Vector 1s</th>
+                  <th style="width:110px;">Nhãn</th>
+                  <th style="min-width:210px;">Chấm Điểm</th>
                 </tr>
               </thead>
               <tbody id="eval-triggers-tbody">
-                <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Vui lòng chọn một Case để tải danh sách mốc kích hoạt.</td></tr>
+                <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:16px;">Chọn một Case để xem mốc kích hoạt.</td></tr>
               </tbody>
             </table>
           </div>
@@ -731,28 +703,28 @@
         <!-- Curated Dataset Repository Card -->
         <div class="card">
           <div class="card-title">
-            <span>📦 Kho Mẫu Đã Gán Nhãn Trong Hệ Thống (Curated Training Dataset)</span>
+            <span>📦 Kho Mẫu Đã Gán Nhãn (Dataset)</span>
             <div id="eval-dataset-stat-badges" style="display:flex; gap:6px; flex-wrap:wrap;">
               <!-- Badges populated dynamically -->
             </div>
           </div>
           <div style="overflow-x:auto; max-height:300px;">
-            <table class="data-table" style="font-size:0.78rem;">
+            <table class="data-table compact-table" style="font-size:0.76rem;">
               <thead>
                 <tr>
-                  <th>Mã Mẫu</th>
-                  <th>Nguồn Case</th>
-                  <th>Frame #</th>
+                  <th>Mã</th>
+                  <th>Case</th>
+                  <th>Frame</th>
                   <th>Thời Gian</th>
-                  <th>Nhãn Chuẩn (Ground Truth)</th>
-                  <th>Người Xác Nhận</th>
-                  <th>Đặc Trưng Lưu Trữ (1s Vector)</th>
+                  <th>Nhãn Chuẩn</th>
+                  <th>Nguồn</th>
+                  <th>Đặc Trưng 1s</th>
                   <th>Ghi Chú</th>
-                  <th style="width:50px;">Xóa</th>
+                  <th style="width:40px;">Xóa</th>
                 </tr>
               </thead>
               <tbody id="eval-curated-dataset-tbody">
-                <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:16px;">Đang nạp kho mẫu đã gán nhãn...</td></tr>
+                <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:14px;">Đang nạp dataset...</td></tr>
               </tbody>
             </table>
           </div>
@@ -765,46 +737,46 @@
     <div id="page-vlm-eval" class="view-container">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">🤖 VLM Ground Truth — Giám Định Chất Lượng Mô Hình Toán</span>
+          <span class="page-title">🤖 VLM Audit</span>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button class="btn btn-primary" id="btn-run-vlm-eval">🚀 Cho Gemini 3.7 Giám Định Toàn Bộ Trigger</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-primary btn-icon-sm" id="btn-run-vlm-eval">🚀 Chạy Giám Định</button>
         </div>
       </div>
 
-      <div style="padding-top:16px; display:flex; flex-direction:column; gap:16px;">
+      <div style="padding-top:16px; display:flex; flex-direction:column; gap:14px;">
         
         <!-- Controls & Parameter Config Card -->
         <div class="card">
           <div class="card-title">
-            <span>🔍 Cấu Hình Giám Định Mô Hình Toán Cảm Biến</span>
-            <span class="meta-badge" id="vlm-selected-case-badge">Case: Chưa chọn</span>
+            <span>🔍 Cấu Hình Giám Định</span>
+            <span class="meta-badge" id="vlm-selected-case-badge">Case: --</span>
           </div>
-          <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr auto; gap:12px; align-items:end;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr auto; gap:10px; align-items:end;">
             <div>
-              <label style="font-size:0.8rem; color:var(--text-secondary);">Chọn Video Cần Giám Định:</label>
+              <label style="font-size:0.78rem; color:var(--text-secondary);">Video:</label>
               <select id="vlm-select-case" class="btn" style="width:100%; margin-top:4px;">
                 <!-- Populated dynamically with cases -->
               </select>
             </div>
             <div>
-              <label style="font-size:0.8rem; color:var(--text-secondary);">Mô Hình Giám Định (Auditor):</label>
+              <label style="font-size:0.78rem; color:var(--text-secondary);">Auditor:</label>
               <select id="vlm-select-model" class="btn" style="width:100%; margin-top:4px;">
-                <option value="gemini-3.7-flash-high" selected>Gemini 3.7 Flash High (Tiny Provider)</option>
-                <option value="qwen2-vl-7b">Qwen2-VL 7B (Local SLM)</option>
+                <option value="gemini-3.7-flash-high" selected>Gemini 3.7 Flash</option>
+                <option value="qwen2-vl-7b">Qwen2-VL 7B (Local)</option>
               </select>
             </div>
             <div>
-              <label style="font-size:0.8rem; color:var(--text-secondary);">Bộ Tiêu Chí Giám Định:</label>
+              <label style="font-size:0.78rem; color:var(--text-secondary);">Bộ Tiêu Chí:</label>
               <select id="vlm-select-prompt" class="btn" style="width:100%; margin-top:4px;">
-                <option value="novaland_3groups" selected>⭐ Chuẩn Novaland 3 Nhóm (An Toàn, Vệ Sinh, Chất Lượng & Che Khuất)</option>
-                <option value="general_safety_audit">1. Kiểm tra an toàn lao động & Trạng thái thao tác</option>
-                <option value="keyframe_deduplication">2. Lọc ảnh trùng lặp & Loại bỏ Motion Blur</option>
+                <option value="novaland_3groups" selected>⭐ Novaland 3 Nhóm</option>
+                <option value="general_safety_audit">1. An toàn & thao tác</option>
+                <option value="keyframe_deduplication">2. Lọc trùng & mờ</option>
               </select>
             </div>
             <div>
-              <button class="btn btn-success" id="btn-apply-vlm-params" style="padding:8px 14px; font-weight:600;" title="Áp dụng ngay bộ tham số toán học tối ưu do VLM gợi ý">
-                ⚡ Nạp Tham Số Tối Ưu Vào Bộ Lọc
+              <button class="btn btn-success btn-icon-sm" id="btn-apply-vlm-params" title="Áp dụng tham số do VLM đề xuất vào bộ lọc">
+                ⚡ Nạp Tham Số VLM
               </button>
             </div>
           </div>
@@ -813,19 +785,19 @@
         <!-- Summary KPIs Dashboard -->
         <div class="metrics-grid" id="vlm-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:0;">
           <div class="metric-box">
-            <div class="metric-label">Tổng Mốc Trigger Do Toán Sinh Ra</div>
+            <div class="metric-label">Tổng Mốc Trigger</div>
             <div class="metric-value" id="vlm-kpi-total">--</div>
           </div>
           <div class="metric-box" style="border-left:3px solid var(--accent-cyan);">
-            <div class="metric-label">Trigger Chuẩn Xác (True Positive)</div>
+            <div class="metric-label">Đạt Chuẩn (TP)</div>
             <div class="metric-value" id="vlm-kpi-useful" style="color:var(--accent-cyan);">--</div>
           </div>
           <div class="metric-box" style="border-left:3px solid var(--accent-yellow);">
-            <div class="metric-label">Trigger Bị Che / Mờ (Lỗi Mô Hình Toán)</div>
+            <div class="metric-label">Trùng / Mờ (FP)</div>
             <div class="metric-value" id="vlm-kpi-redundant" style="color:var(--accent-yellow);">--</div>
           </div>
           <div class="metric-box" style="border-left:3px solid var(--accent-green);">
-            <div class="metric-label">Tỷ Lệ Giảm Tải Token VLM</div>
+            <div class="metric-label">Giảm Tải Token</div>
             <div class="metric-value" id="vlm-kpi-savings" style="color:var(--accent-green);">--%</div>
           </div>
         </div>
@@ -833,33 +805,33 @@
         <!-- VLM Recommendation & Insight Box -->
         <div id="vlm-insight-box" class="card" style="display:none; background:#11151c; border-left:4px solid var(--accent-cyan);">
           <div class="card-title" style="margin-bottom:6px;">
-            <span>💡 Nhận Định Của VLM & Đề Xuất Tối Ưu Hệ Số Toán Học</span>
+            <span>💡 Nhận Định & Đề Xuất VLM</span>
             <span id="vlm-eval-time" style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">--</span>
           </div>
-          <p id="vlm-insight-text" style="font-size:0.86rem; color:var(--text-secondary); line-height:1.6; margin:0;"></p>
-          <div id="vlm-params-preview" style="margin-top:10px; font-family:monospace; font-size:0.78rem; color:var(--accent-cyan); background:#161b22; padding:8px 12px; border-radius:6px;"></div>
+          <p id="vlm-insight-text" style="font-size:0.84rem; color:var(--text-secondary); line-height:1.5; margin:0;"></p>
+          <div id="vlm-params-preview" style="margin-top:8px; font-family:monospace; font-size:0.76rem; color:var(--accent-cyan); background:#161b22; padding:6px 10px; border-radius:6px;"></div>
         </div>
 
         <!-- VLM Trigger Audit Detail Table -->
         <div class="card">
           <div class="card-title">
-            <span>📋 Bảng Đối Soát Chi Tiết Từng Trigger (Classical CV vs VLM Verdict)</span>
-            <span id="vlm-audit-count" style="font-size:0.8rem; color:var(--text-muted);">0 Bản ghi</span>
+            <span>📋 Đối Soát Trigger (CV vs VLM)</span>
+            <span id="vlm-audit-count" style="font-size:0.8rem; color:var(--text-muted);">0 mốc</span>
           </div>
-          <table class="data-table">
+          <table class="data-table compact-table">
             <thead>
               <tr>
-                <th style="width:70px;">Mốc (s)</th>
-                <th style="width:90px;">Ảnh Trigger</th>
-                <th style="width:140px;">Classical CV</th>
-                <th style="width:100px;">Độ Nét (Lap)</th>
-                <th>Nhận Định Của VLM (Scene & Action)</th>
-                <th style="width:130px;">Đánh Giá VLM</th>
-                <th style="width:90px;">Thao Tác</th>
+                <th style="width:60px;">Mốc (s)</th>
+                <th style="width:80px;">Ảnh</th>
+                <th style="width:120px;">CV</th>
+                <th style="width:80px;">Độ Nét</th>
+                <th>Nhận Định VLM</th>
+                <th style="width:110px;">Đánh Giá</th>
+                <th style="width:70px;">Thao Tác</th>
               </tr>
             </thead>
             <tbody id="vlm-audit-tbody">
-              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Chọn một Case và bấm '🚀 Bắt Đầu Đánh Giá Với VLM' để phân tích đối soát.</td></tr>
+              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Chọn Case và bấm '🚀 Chạy Giám Định' để phân tích.</td></tr>
             </tbody>
           </table>
         </div>
@@ -871,16 +843,16 @@
     <div id="page-settings" class="view-container">
       <div class="sub-nav-bar">
         <div class="page-title-group">
-          <span class="page-title">⚙️ Cài Đặt Hệ Thống</span>
+          <span class="page-title">⚙️ Cài Đặt</span>
         </div>
       </div>
       <div style="padding-top:16px;">
-        <div class="card" style="max-width:700px;">
-          <div class="card-title"><span>Hạ Tầng Lưu Trữ MinIO & Database</span></div>
-          <p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.6;">
-            • <b>MinIO Hub:</b> http://127.0.0.1:9020 (Bucket: <code>cbd-motion-lab</code>)<br>
-            • <b>PostgreSQL Container:</b> 127.0.0.1:5440 (Database: <code>cbd_motion</code>)<br>
-            • <b>Thuật toán:</b> Shi-Tomasi Corner Detector + Pyramidal Lucas-Kanade + RANSAC + Laplacian Variance + FFT Cadence.
+        <div class="card" style="max-width:600px;">
+          <div class="card-title"><span>Hạ Tầng</span></div>
+          <p style="color:var(--text-secondary); font-size:0.84rem; line-height:1.6;">
+            • <b>MinIO:</b> http://127.0.0.1:9020 (Bucket: <code>cbd-motion-lab</code>)<br>
+            • <b>PostgreSQL:</b> 127.0.0.1:5440 (Database: <code>cbd_motion</code>)<br>
+            • <b>Pipeline:</b> LK-Sparse-RANSAC + FFT-Cadence.
           </p>
         </div>
       </div>
