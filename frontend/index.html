@@ -133,11 +133,17 @@
 
         <!-- Studio Processing Banner -->
         <div id="studio-processing-banner" style="display:none; background:#161f2e; border:1px solid var(--accent-orange); border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#f3f4f6; font-size:0.86rem;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.2rem;">⚙️</span>
-            <div>
-              <div style="font-weight:700; color:var(--accent-orange);" id="studio-processing-text">Đang phân tích video...</div>
-              <div style="font-size:0.76rem; color:var(--text-secondary);" id="studio-processing-subtext">Đang trích xuất Optical Flow, FFT Cadence & Trigger.</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:1.2rem;" id="studio-processing-icon">⚙️</span>
+              <div>
+                <div style="font-weight:700; color:var(--accent-orange);" id="studio-processing-text">Đang phân tích video...</div>
+                <div style="font-size:0.76rem; color:var(--text-secondary);" id="studio-processing-subtext">Đang trích xuất Optical Flow, FFT Cadence & Trigger.</div>
+              </div>
+            </div>
+            <div class="action-btn-group" id="studio-processing-actions">
+              <button class="btn btn-primary btn-icon-sm" id="btn-studio-force-rerun" title="Bỏ qua dữ liệu lỗi, ép tính lại từ đầu">⚡ Tính lại ngay</button>
+              <button class="btn btn-danger btn-icon-sm" id="btn-studio-clear-status" title="Hủy trạng thái kẹt và làm sạch dữ liệu tạm">🧹 Clear trạng thái</button>
             </div>
           </div>
         </div>
@@ -415,9 +421,14 @@
               <span id="tuning-status-tag" class="trigger-tag tag-stable">SẴN SÀNG</span>
             </div>
 
-            <button class="btn btn-success" id="btn-submit-rerun" style="padding:10px 16px; font-size:0.95rem; font-weight:700;" title="Chạy lại pipeline trên video gốc với tham số mới">
-              ▶ Chạy Pipeline
-            </button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-success" id="btn-submit-rerun" style="flex:1; padding:10px 16px; font-size:0.95rem; font-weight:700;" title="Chạy lại pipeline trên video gốc với tham số">
+                ▶ Chạy Pipeline
+              </button>
+              <button class="btn btn-danger btn-icon-sm" id="btn-tuning-clear-status" style="padding:10px 14px;" title="Làm sạch dữ liệu tạm & đưa trạng thái về sẵn sàng">
+                🧹 Clear
+              </button>
+            </div>
 
             <!-- Real-time Progress Bar Box -->
             <div id="tuning-progress-box" class="progress-container" style="display:none;">

@@ -21,6 +21,20 @@ from backend.app.models.schema import AnalysisCase, CaseTelemetry, TriggerEvent
 from backend.app.services.minio_service import upload_file_bytes
 from backend.app.services.ws_manager import ws_manager
 
+# In-memory registry of actively running and canceled video analysis jobs
+RUNNING_CASES = set()
+CANCELED_CASES = set()
+
+
+def is_case_running(case_id: str) -> bool:
+    return case_id in RUNNING_CASES
+
+
+def cancel_case_processing(case_id: str):
+    if case_id in RUNNING_CASES:
+        CANCELED_CASES.add(case_id)
+
+
 
 def ensure_web_preview_generated(case_id: str, master_video_path: str) -> Optional[str]:
     """Generates a browser-compatible H264 preview in background if master video is HEVC/H.265.
@@ -64,6 +78,9 @@ def process_video_case(
     config_params: dict = None,
 ):
     from backend.app.database import SessionLocal
+    # Register in running set
+    RUNNING_CASES.add(case_id)
+    CANCELED_CASES.discard(case_id)
     # Create a fresh session for the background worker
     worker_db = SessionLocal()
     try:
@@ -77,6 +94,8 @@ def process_video_case(
             worker_db.commit()
         raise
     finally:
+        RUNNING_CASES.discard(case_id)
+        CANCELED_CASES.discard(case_id)
         worker_db.close()
 
 
@@ -113,6 +132,10 @@ def _run_process(
     case.resolution = f"{width}x{height}"
     pipeline = Pipeline(config_params, fps=fps)
     case.config_params = pipeline.config
+    db.commit()
+
+    # Ensure browser-compatible web preview exists early if master file is H265/HEVC
+    ensure_web_preview_generated(case_id, video_path)
 
     start_perf = time.time()
     frame_idx = 0
@@ -124,6 +147,26 @@ def _run_process(
     sharpnesses = []
 
     while True:
+        if case_id in CANCELED_CASES:
+            print(f"[Processor] Case {case_id} was requested to cancel. Stopping gracefully.")
+            cap.release()
+            db.query(CaseTelemetry).filter(CaseTelemetry.case_id == case_id).delete()
+            db.query(TriggerEvent).filter(TriggerEvent.case_id == case_id).delete()
+            case.status = "ready"
+            case.summary_stats = {"status": "canceled_by_user", "message": "Tác vụ đã bị người dùng hủy/reset"}
+            db.commit()
+            try:
+                ws_manager.broadcast_sync({
+                    "type": "PROCESSING_FINISHED",
+                    "case_id": case_id,
+                    "status": "ready",
+                    "canceled": True,
+                    "summary": case.summary_stats,
+                })
+            except Exception:
+                pass
+            return
+
         ret, frame = cap.read()
         if not ret:
             break

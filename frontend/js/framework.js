@@ -87,6 +87,26 @@ async function initPluginWorkbench() {
     syncPluginCase(pluginCase || window.currentCaseData);
     run.textContent = '▶ Chạy Pipeline';
     run.onclick = runPluginPipeline;
+    const btnClear = document.getElementById('btn-tuning-clear-status');
+    if (btnClear) {
+      btnClear.onclick = async () => {
+        if (!currentCaseId) return;
+        if (!confirm(`Làm sạch dữ liệu tạm và reset trạng thái cho Case ${currentCaseId}?`)) return;
+        btnClear.disabled = true;
+        try {
+          const res = await fetch(`/api/cases/${currentCaseId}/reset`, { method: 'POST' });
+          const data = await res.json();
+          toast.success(data.message || 'Đã làm sạch trạng thái!');
+          pluginRunCase = null;
+          await openCaseStudio(currentCaseId, false, true);
+          loadCases();
+        } catch (err) {
+          toast.error('Lỗi khi clear: ' + err.message);
+        } finally {
+          btnClear.disabled = false;
+        }
+      };
+    }
     document.getElementById('btn-view-tuned-studio').onclick = () => openCaseStudio(currentCaseId, true, true);
   } catch (error) {
     oldCard.textContent = `Lỗi tải framework: ${error.message}`;
@@ -153,7 +173,9 @@ function syncPluginCase(data) {
     renderPluginParams(group, {...(saved?.params || data.config_params || {}), ...(pluginRecommendedParams || {})});
   });
   pluginRecommendedParams = null;
-  document.getElementById('btn-submit-rerun').disabled = data.status === 'processing' || data.status === 'recording' || !!pluginRunCase;
+  const runBtn = document.getElementById('btn-submit-rerun');
+  runBtn.disabled = data.status === 'recording' || !!pluginRunCase;
+  runBtn.textContent = data.status === 'processing' ? '⚡ Ép Chạy Lại Pipeline' : '▶ Chạy Pipeline';
 }
 
 async function runPluginPipeline() {
@@ -179,7 +201,7 @@ async function runPluginPipeline() {
   try {
     const response = await fetch(`/api/cases/${id}/run-pipeline`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({config_params: config})
+      body: JSON.stringify({config_params: config, force: true})
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || `HTTP ${response.status}`);

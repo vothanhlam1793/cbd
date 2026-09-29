@@ -17,7 +17,7 @@ from backend.app.database import SessionLocal, get_db
 from backend.app.models.schema import AnalysisCase, CaseTelemetry, Device, TriggerEvent, CuratedDatasetSample, VLMEvaluationRun, VLMTriggerFeedback
 from backend.app.services.minio_service import upload_local_file
 from backend.app.services.stream_recorder import StreamRecorderService
-from backend.app.services.video_processor import process_video_case
+from backend.app.services.video_processor import process_video_case, is_case_running, cancel_case_processing
 from backend.app.services.ws_manager import ws_manager
 from backend.app.framework import discover, normalize, Pipeline
 
@@ -265,26 +265,75 @@ def framework_plugins():
     return discover()
 
 
+@router.post("/cases/{case_id}/reset")
+def reset_case_status(
+    case_id: str,
+    db: Session = Depends(get_db),
+):
+    case = db.query(AnalysisCase).filter(AnalysisCase.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    if is_case_running(case_id):
+        cancel_case_processing(case_id)
+        time.sleep(0.3)
+
+    db.query(CaseTelemetry).filter(CaseTelemetry.case_id == case_id).delete()
+    db.query(TriggerEvent).filter(TriggerEvent.case_id == case_id).delete()
+
+    case.status = "ready"
+    case.summary_stats = {"status": "reset", "message": "Đã làm sạch trạng thái và dữ liệu tạm"}
+    db.commit()
+
+    try:
+        ws_manager.broadcast_sync({
+            "type": "PROCESSING_FINISHED",
+            "case_id": case_id,
+            "status": "ready",
+            "canceled": True,
+            "summary": case.summary_stats,
+            "triggers_count": 0,
+        })
+    except Exception:
+        pass
+
+    return {"case_id": case_id, "status": "ready", "message": "Đã làm sạch trạng thái thành công"}
+
+
 @router.post("/cases/{case_id}/run-pipeline")
 @router.post("/cases/{case_id}/rerun")
 def rerun_case_analysis(
     case_id: str,
-    payload: Dict,
-    background_tasks: BackgroundTasks,
+    payload: Dict = None,
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db),
 ):
+    payload = payload or {}
     case = db.query(AnalysisCase).filter(AnalysisCase.id == case_id).with_for_update().first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    # Clear previous telemetry and triggers
+    force = bool(payload.get("force", False))
     if case.status in ('processing', 'recording'):
-        raise HTTPException(status_code=409, detail='Case is already running')
+        if is_case_running(case_id) and not force:
+            raise HTTPException(status_code=409, detail='Case đang chạy trong RAM. Bấm Clear hoặc Force Rerun để ghi đè.')
+        elif is_case_running(case_id) and force:
+            cancel_case_processing(case_id)
+            time.sleep(0.3)
+
+    raw_cfg = payload.get('config_params')
+    if raw_cfg is None:
+        # Filter out non-config keys like force, algorithm_version
+        raw_cfg = {k: v for k, v in payload.items() if k not in ('force', 'algorithm_version')}
+        if not raw_cfg and case.config_params:
+            raw_cfg = case.config_params
+
     try:
-        config = normalize(payload.get('config_params', payload))
+        config = normalize(raw_cfg)
         Pipeline(config)  # Check installed plugin interfaces before deleting previous results.
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
     db.query(CaseTelemetry).filter(CaseTelemetry.case_id == case_id).delete()
     db.query(TriggerEvent).filter(TriggerEvent.case_id == case_id).delete()
     

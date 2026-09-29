@@ -335,8 +335,10 @@ function initWebSocketDebugger() {
           }
         } else if (msg.type === "PROCESSING_FINISHED") {
           // Finished event
+          loadCases();
           if (msg.case_id === currentCaseId) {
             handleTuningFinished(msg);
+            openCaseStudio(currentCaseId, false, true);
           }
         } else if (msg.type === "SYSTEM_INFO") {
           logDebug(`[System] Server Info: ${msg.data.server} (${msg.data.version}) - Status: ${msg.data.status}`);
@@ -701,6 +703,7 @@ async function loadCases() {
 
     cases.forEach((c) => {
       const tr = document.createElement("tr");
+      const isNotReady = c.status === "processing" || c.status === "failed";
       tr.innerHTML = `
         <td><code style="color:var(--accent-cyan);">${c.id}</code></td>
         <td><b>${c.title}</b></td>
@@ -713,7 +716,8 @@ async function loadCases() {
         <td>
           <div class="action-btn-group">
             <button class="btn btn-primary btn-open-case btn-icon-sm" data-id="${c.id}" title="Mở Replay Studio">🧪 Studio</button>
-            <button class="btn btn-danger btn-del-case btn-icon-sm" data-id="${c.id}" title="Xóa Case">🗑️</button>
+            ${isNotReady ? `<button class="btn btn-warning btn-reset-case btn-icon-sm" data-id="${c.id}" title="Làm sạch dữ liệu tính dở & mở khóa">🧹 Reset</button>` : ""}
+            <button class="btn btn-danger btn-del-case btn-icon-sm" data-id="${c.id}" title="Xóa hẳn Case & Video">🗑️</button>
           </div>
         </td>
       `;
@@ -740,9 +744,29 @@ async function loadCases() {
       });
     });
 
+    document.querySelectorAll(".btn-reset-case").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (confirm(`Làm sạch dữ liệu tính dở và reset trạng thái cho Case ${id}?`)) {
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/cases/${id}/reset`, { method: "POST" });
+            const data = await res.json();
+            toast.success(data.message || "Đã reset thành công!");
+            loadCases();
+            if (currentCaseId === id) openCaseStudio(id, false, true);
+          } catch (err) {
+            toast.error("Lỗi khi reset: " + err.message);
+          } finally {
+            btn.disabled = false;
+          }
+        }
+      });
+    });
+
     document.querySelectorAll(".btn-del-case").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (confirm("Xóa case này?")) {
+        if (confirm("Xóa hẳn case này cùng file video?")) {
           await fetch(`/api/cases/${btn.getAttribute("data-id")}`, { method: "DELETE" });
           loadCases();
         }
@@ -787,16 +811,72 @@ async function openCaseStudio(caseId, updateHash = true, forceReload = false) {
   if (durBadge) durBadge.textContent = `⏱️ ${formatDuration(currentCaseData.duration_sec)}`;
   if (createdBadge) createdBadge.textContent = `📅 ${formatDateTime(currentCaseData.created_at)}`;
 
-  // Check status & display banner if processing
+  // Check status & display banner if processing or failed
   const processingBanner = document.getElementById("studio-processing-banner");
-  if (currentCaseData.status === "processing") {
+  const procTxt = document.getElementById("studio-processing-text");
+  const procSub = document.getElementById("studio-processing-subtext");
+  const procIcon = document.getElementById("studio-processing-icon");
+
+  if (currentCaseData.status === "processing" || currentCaseData.status === "failed") {
     if (processingBanner) {
       processingBanner.style.display = "block";
-      const procTxt = document.getElementById("studio-processing-text");
-      if (procTxt) procTxt.textContent = `Đang phân tích mô hình toán học trên video (${currentCaseData.id})...`;
+      if (currentCaseData.status === "failed") {
+        if (procIcon) procIcon.textContent = "⚠️";
+        if (procTxt) procTxt.textContent = `Xử lý bị gián đoạn hoặc gặp lỗi (${currentCaseData.id})`;
+        if (procSub) procSub.textContent = currentCaseData.summary_stats?.error || currentCaseData.summary_stats?.message || "Nhấn [⚡ Tính lại ngay] để chạy lại từ đầu.";
+      } else {
+        if (procIcon) procIcon.textContent = "⚙️";
+        if (procTxt) procTxt.textContent = `Đang phân tích video (${currentCaseData.id})...`;
+        if (procSub) procSub.textContent = "Hệ thống đang trích xuất Optical Flow, FFT Cadence & Trigger. Bạn có thể bấm [🧹 Clear] nếu muốn dừng.";
+      }
     }
   } else {
     if (processingBanner) processingBanner.style.display = "none";
+  }
+
+  // Bind Banner Buttons
+  const btnForceRerun = document.getElementById("btn-studio-force-rerun");
+  const btnClearStatus = document.getElementById("btn-studio-clear-status");
+  if (btnForceRerun) {
+    btnForceRerun.onclick = async () => {
+      btnForceRerun.disabled = true;
+      toast.info(`Bắt đầu chạy lại Case ${caseId}...`);
+      try {
+        const res = await fetch(`/api/cases/${caseId}/run-pipeline`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ force: true, config_params: currentCaseData.config_params || {} })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Lỗi khởi động");
+        }
+        toast.success("Đã kích hoạt tính lại!");
+        openCaseStudio(caseId, false, true);
+      } catch (e) {
+        toast.error("Lỗi khi chạy lại: " + e.message);
+      } finally {
+        btnForceRerun.disabled = false;
+      }
+    };
+  }
+  if (btnClearStatus) {
+    btnClearStatus.onclick = async () => {
+      if (confirm(`Làm sạch dữ liệu tính dở và reset trạng thái cho Case ${caseId}?`)) {
+        btnClearStatus.disabled = true;
+        try {
+          const res = await fetch(`/api/cases/${caseId}/reset`, { method: "POST" });
+          const data = await res.json();
+          toast.success(data.message || "Đã làm sạch trạng thái!");
+          loadCases();
+          openCaseStudio(caseId, false, true);
+        } catch (e) {
+          toast.error("Lỗi khi reset: " + e.message);
+        } finally {
+          btnClearStatus.disabled = false;
+        }
+      }
+    };
   }
 
   // Sync sliders for tuning tab
