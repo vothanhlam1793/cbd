@@ -75,6 +75,10 @@ class TriggerEngine:
         dominant_freq_hz: float,
         predicted_state: str,
         occlusion_ratio: float = 0.0,
+        center_occlusion: float = 0.0,
+        lens_status: str = "CLEAR",
+        dark_ratio: float = 0.0,
+        glare_ratio: float = 0.0,
         mean_brightness: float = 128.0,
         contrast_score: float = 50.0,
         angular_yaw_vel: float = 0.0,
@@ -108,7 +112,11 @@ class TriggerEngine:
             "visual_quality": {
                 "sharpness_laplacian": round(sharpness, 1),
                 "occlusion_ratio": round(occlusion_ratio, 3),
-                "is_occluded": occlusion_ratio > self.max_occlusion_ratio,
+                "center_occlusion": round(center_occlusion, 3),
+                "lens_status": lens_status,
+                "dark_ratio": round(dark_ratio, 3),
+                "glare_ratio": round(glare_ratio, 3),
+                "is_occluded": (occlusion_ratio > self.max_occlusion_ratio) or (lens_status in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"]),
                 "mean_brightness": round(mean_brightness, 1),
                 "contrast_score": round(contrast_score, 1),
             },
@@ -131,11 +139,11 @@ class TriggerEngine:
             if self.was_moving and stable_duration_sec >= self.min_stable_duration_sec:
                 # BỘ LỌC CHẤT LƯỢNG MÔ HÌNH TOÁN (Math Quality Gates):
                 # 1. Không bị rung giật tức thời (speed < spike_speed)
-                # 2. Không bị che khuất ống kính (occlusion_ratio <= max_occlusion)
+                # 2. Không bị che khuất ống kính (occlusion_ratio <= max_occlusion và không bị che/tối/chói)
                 # 3. Không bị xoay đầu giật nhanh (angular_yaw_vel <= max_angular_yaw)
                 # 4. Đạt độ nét tối thiểu (sharpness >= min_sharpness)
                 is_stable_pass = speed < self.spike_speed_threshold
-                is_occlusion_pass = occlusion_ratio <= self.max_occlusion_ratio
+                is_occlusion_pass = (occlusion_ratio <= self.max_occlusion_ratio) and (center_occlusion < 0.60) and (lens_status not in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"])
                 is_yaw_pass = angular_yaw_vel <= self.max_angular_yaw_vel
                 is_sharpness_pass = sharpness >= self.min_sharpness and confidence >= 0.35
 

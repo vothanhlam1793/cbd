@@ -931,13 +931,14 @@ function renderTriggers(triggers) {
 
     const sharpVal = vq.sharpness_laplacian || tr.sharpness_score || 0;
     const occlVal = vq.occlusion_ratio !== undefined ? (vq.occlusion_ratio * 100).toFixed(0) : "0";
+    const lensStatus = vq.lens_status || "CLEAR";
     const dwellVal = tc.dwell_duration_sec !== undefined ? tc.dwell_duration_sec : (d.stable_duration_sec || 0);
     const yawVal = sp.angular_yaw_vel_px_s !== undefined ? sp.angular_yaw_vel_px_s : 0;
     const preVal = tc.pre_stability_score !== undefined ? tc.pre_stability_score : 1.0;
     const stateVal = cg.predicted_state || tr.context_state || "stable";
 
     document.getElementById("deck-val-sharpness").textContent = `${Number(sharpVal).toFixed(1)}`;
-    document.getElementById("deck-val-occlusion").textContent = `${occlVal}%`;
+    document.getElementById("deck-val-occlusion").textContent = lensStatus !== "CLEAR" ? `${occlVal}% (${lensStatus})` : `${occlVal}%`;
     document.getElementById("deck-val-dwell").textContent = `${dwellVal}s`;
     document.getElementById("deck-val-yaw").textContent = `${yawVal} px/s`;
     document.getElementById("deck-val-pre-stability").textContent = `${preVal}`;

@@ -76,10 +76,13 @@ class CaseTelemetry(Base):
     motion_direction_deg = Column(Float, default=0.0)  # Angle 0-360
     rotation_deg = Column(Float, default=0.0)  # Rotation component
     
-    # Image Quality
+    # Image Quality & Lens Diagnostics
     sharpness_score = Column(Float, default=0.0)  # Laplacian variance
     tracking_confidence = Column(Float, default=1.0)  # Inlier ratio / points count
     tracked_points_count = Column(Integer, default=0)
+    occlusion_ratio = Column(Float, default=0.0)  # 0.0 to 1.0 (spatial cloth/cover ratio)
+    center_occlusion = Column(Float, default=0.0)  # 0.0 to 1.0 (center 4-cell focus area)
+    lens_status = Column(String(32), default="CLEAR")  # CLEAR, CLOTH_OCCLUDED, POCKET_DARK, GLARE, MOTION_BLUR, DEFOCUS_BLUR
     
     # Cadence & Time-window metrics
     cadence_mean = Column(Float, default=0.0)

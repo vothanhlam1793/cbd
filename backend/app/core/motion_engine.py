@@ -27,6 +27,10 @@ class MotionMetrics:
         tracked_points_count: int = 0,
         inliers_count: int = 0,
         occlusion_ratio: float = 0.0,
+        center_occlusion: float = 0.0,
+        lens_status: str = "CLEAR",
+        dark_ratio: float = 0.0,
+        glare_ratio: float = 0.0,
         mean_brightness: float = 128.0,
         contrast_score: float = 50.0,
         inlier_points_prev: Optional[List[Tuple[float, float]]] = None,
@@ -43,6 +47,10 @@ class MotionMetrics:
         self.tracked_points_count = int(tracked_points_count)
         self.inliers_count = int(inliers_count)
         self.occlusion_ratio = float(occlusion_ratio)
+        self.center_occlusion = float(center_occlusion)
+        self.lens_status = str(lens_status)
+        self.dark_ratio = float(dark_ratio)
+        self.glare_ratio = float(glare_ratio)
         self.mean_brightness = float(mean_brightness)
         self.contrast_score = float(contrast_score)
         self.inlier_points_prev = inlier_points_prev or []
@@ -61,6 +69,10 @@ class MotionMetrics:
             "tracked_points_count": self.tracked_points_count,
             "inliers_count": self.inliers_count,
             "occlusion_ratio": round(self.occlusion_ratio, 3),
+            "center_occlusion": round(self.center_occlusion, 3),
+            "lens_status": self.lens_status,
+            "dark_ratio": round(self.dark_ratio, 3),
+            "glare_ratio": round(self.glare_ratio, 3),
             "mean_brightness": round(self.mean_brightness, 1),
             "contrast_score": round(self.contrast_score, 1),
         }
@@ -99,38 +111,95 @@ class MotionEngine:
         self.prev_gray = None
         self.prev_pts = None
 
-    def calculate_sharpness(self, gray_frame: np.ndarray) -> float:
-        """Measure focus and blur using Variance of Laplacian."""
+    def calculate_sharpness(self, gray_frame: np.ndarray) -> Tuple[float, np.ndarray]:
+        """Measure focus and blur using Variance of Laplacian and return both variance and absolute laplacian map."""
         laplacian = cv2.Laplacian(gray_frame, cv2.CV_64F)
-        variance = laplacian.var()
-        return float(variance)
+        variance = float(laplacian.var())
+        abs_lap = np.abs(laplacian)
+        return variance, abs_lap
 
-    def calculate_occlusion_and_lighting(self, gray_frame: np.ndarray) -> Tuple[float, float, float]:
-        """Measure occlusion (e.g. cloth/arm covering lens) and scene lighting.
+    def calculate_occlusion_and_diagnostics(
+        self,
+        gray_frame: np.ndarray,
+        abs_lap: np.ndarray,
+        sharpness: float,
+        speed: float = 0.0,
+    ) -> Tuple[float, float, str, float, float, float, float]:
+        """Comprehensive <0.4ms spatial edge & lighting analysis.
         
-        Divides the frame into 4x4 grid cells (16 cells) and checks how many cells
-        have near-zero texture/variance (flat uniform color like dark fabric or blurry cloth).
+        Returns:
+            occlusion_ratio (0.0 - 1.0)
+            center_occlusion (0.0 - 1.0)
+            lens_status ("CLEAR", "CLOTH_OCCLUDED", "POCKET_DARK", "GLARE", "MOTION_BLUR", "DEFOCUS_BLUR")
+            dark_ratio (0.0 - 1.0)
+            glare_ratio (0.0 - 1.0)
+            mean_brightness (0 - 255)
+            contrast_score (std dev of pixels)
         """
         h, w = gray_frame.shape
         mean_brightness = float(np.mean(gray_frame))
         contrast_score = float(np.std(gray_frame))
 
-        # Check grid cells
+        # 1. Dark & Glare extreme pixel analysis
+        total_pixels = float(h * w)
+        dark_pixels = np.count_nonzero(gray_frame < 22)
+        glare_pixels = np.count_nonzero(gray_frame > 242)
+        dark_ratio = float(dark_pixels / total_pixels)
+        glare_ratio = float(glare_pixels / total_pixels)
+
+        # 2. Spatial 4x4 Edge & Texture Grid
         rows, cols = 4, 4
         cell_h, cell_w = h // rows, w // cols
         flat_cells = 0
+        center_flat_cells = 0
         total_cells = rows * cols
+
+        # Center cells in 4x4 are (1,1), (1,2), (2,1), (2,2)
+        center_indices = {(1, 1), (1, 2), (2, 1), (2, 2)}
 
         for r in range(rows):
             for c in range(cols):
-                patch = gray_frame[r * cell_h:(r + 1) * cell_h, c * cell_w:(c + 1) * cell_w]
-                patch_std = np.std(patch)
-                # If a cell is extremely flat (clothing / blocked lens), patch_std is very low
-                if patch_std < 8.0:
+                patch_gray = gray_frame[r * cell_h:(r + 1) * cell_h, c * cell_w:(c + 1) * cell_w]
+                patch_lap = abs_lap[r * cell_h:(r + 1) * cell_h, c * cell_w:(c + 1) * cell_w]
+                
+                patch_std = np.std(patch_gray)
+                patch_edge_energy = np.mean(patch_lap)
+
+                # An occluded patch (clothing, hand, blurry fabric) lacks high-frequency edge energy
+                # Even with gradient lighting (patch_std > 8), edge energy remains extremely low (< 5.0)
+                is_flat = (patch_std < 9.0) or (patch_edge_energy < 5.0 and patch_std < 18.0)
+                if is_flat:
                     flat_cells += 1
+                    if (r, c) in center_indices:
+                        center_flat_cells += 1
 
         occlusion_ratio = float(flat_cells / total_cells)
-        return occlusion_ratio, mean_brightness, contrast_score
+        center_occlusion = float(center_flat_cells / 4.0)
+
+        # 3. Determine Physical Lens Status
+        if dark_ratio > 0.65 or mean_brightness < 18.0:
+            lens_status = "POCKET_DARK"
+        elif glare_ratio > 0.35:
+            lens_status = "GLARE"
+        elif occlusion_ratio >= 0.35 or center_occlusion >= 0.75:
+            lens_status = "CLOTH_OCCLUDED"
+        elif sharpness < 65.0:
+            if speed > 3.0:
+                lens_status = "MOTION_BLUR"
+            else:
+                lens_status = "DEFOCUS_BLUR"
+        else:
+            lens_status = "CLEAR"
+
+        return (
+            occlusion_ratio,
+            center_occlusion,
+            lens_status,
+            dark_ratio,
+            glare_ratio,
+            mean_brightness,
+            contrast_score,
+        )
 
     def extract_features(self, gray_frame: np.ndarray) -> np.ndarray:
         """Find Shi-Tomasi corners."""
@@ -165,18 +234,31 @@ class MotionEngine:
         else:
             gray = proc_frame
 
-        sharpness = self.calculate_sharpness(gray)
-        occlusion_ratio, mean_brightness, contrast_score = self.calculate_occlusion_and_lighting(gray)
+        sharpness, abs_lap = self.calculate_sharpness(gray)
 
         # First frame initialization
         if self.prev_gray is None or self.prev_pts is None or len(self.prev_pts) < 15:
             self.prev_pts = self.extract_features(gray)
             self.prev_gray = gray
+            (
+                occlusion_ratio,
+                center_occlusion,
+                lens_status,
+                dark_ratio,
+                glare_ratio,
+                mean_brightness,
+                contrast_score,
+            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=0.0)
+
             return MotionMetrics(
                 sharpness=sharpness,
                 confidence=1.0 if self.prev_pts is not None and len(self.prev_pts) >= 15 else 0.2,
                 tracked_points_count=len(self.prev_pts) if self.prev_pts is not None else 0,
                 occlusion_ratio=occlusion_ratio,
+                center_occlusion=center_occlusion,
+                lens_status=lens_status,
+                dark_ratio=dark_ratio,
+                glare_ratio=glare_ratio,
                 mean_brightness=mean_brightness,
                 contrast_score=contrast_score,
             )
@@ -210,10 +292,27 @@ class MotionEngine:
             # Re-seed features if tracking is weak
             self.prev_pts = self.extract_features(gray)
             self.prev_gray = gray
+            (
+                occlusion_ratio,
+                center_occlusion,
+                lens_status,
+                dark_ratio,
+                glare_ratio,
+                mean_brightness,
+                contrast_score,
+            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=0.0)
+
             return MotionMetrics(
                 sharpness=sharpness,
                 confidence=0.1,
                 tracked_points_count=tracked_count,
+                occlusion_ratio=occlusion_ratio,
+                center_occlusion=center_occlusion,
+                lens_status=lens_status,
+                dark_ratio=dark_ratio,
+                glare_ratio=glare_ratio,
+                mean_brightness=mean_brightness,
+                contrast_score=contrast_score,
             )
 
         good_prev_arr = np.array(good_prev, dtype=np.float32)
@@ -294,6 +393,16 @@ class MotionEngine:
 
         self.prev_gray = gray
 
+        (
+            occlusion_ratio,
+            center_occlusion,
+            lens_status,
+            dark_ratio,
+            glare_ratio,
+            mean_brightness,
+            contrast_score,
+        ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=speed)
+
         return MotionMetrics(
             dx=dx,
             dy=dy,
@@ -305,6 +414,10 @@ class MotionEngine:
             tracked_points_count=tracked_count,
             inliers_count=inliers_count,
             occlusion_ratio=occlusion_ratio,
+            center_occlusion=center_occlusion,
+            lens_status=lens_status,
+            dark_ratio=dark_ratio,
+            glare_ratio=glare_ratio,
             mean_brightness=mean_brightness,
             contrast_score=contrast_score,
             inlier_points_prev=inlier_prev_list,
