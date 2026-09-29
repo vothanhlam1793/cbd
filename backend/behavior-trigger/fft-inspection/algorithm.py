@@ -20,7 +20,6 @@ class Plugin(Behavior):
             dominant_freq_hz=c.dominant_freq_hz, predicted_state=c.predicted_state,
             occlusion_ratio=m.occlusion_ratio,
             center_occlusion=m.center_occlusion,
-            lens_status=m.lens_status,
             dark_ratio=m.dark_ratio,
             glare_ratio=m.glare_ratio,
             mean_brightness=m.mean_brightness,

@@ -28,7 +28,6 @@ class MotionMetrics:
         inliers_count: int = 0,
         occlusion_ratio: float = 0.0,
         center_occlusion: float = 0.0,
-        lens_status: str = "CLEAR",
         dark_ratio: float = 0.0,
         glare_ratio: float = 0.0,
         mean_brightness: float = 128.0,
@@ -48,7 +47,6 @@ class MotionMetrics:
         self.inliers_count = int(inliers_count)
         self.occlusion_ratio = float(occlusion_ratio)
         self.center_occlusion = float(center_occlusion)
-        self.lens_status = str(lens_status)
         self.dark_ratio = float(dark_ratio)
         self.glare_ratio = float(glare_ratio)
         self.mean_brightness = float(mean_brightness)
@@ -70,7 +68,6 @@ class MotionMetrics:
             "inliers_count": self.inliers_count,
             "occlusion_ratio": round(self.occlusion_ratio, 3),
             "center_occlusion": round(self.center_occlusion, 3),
-            "lens_status": self.lens_status,
             "dark_ratio": round(self.dark_ratio, 3),
             "glare_ratio": round(self.glare_ratio, 3),
             "mean_brightness": round(self.mean_brightness, 1),
@@ -122,19 +119,16 @@ class MotionEngine:
         self,
         gray_frame: np.ndarray,
         abs_lap: np.ndarray,
-        sharpness: float,
-        speed: float = 0.0,
-    ) -> Tuple[float, float, str, float, float, float, float]:
-        """Comprehensive <0.4ms spatial edge & lighting analysis.
+    ) -> Tuple[float, float, float, float, float, float]:
+        """Pure sensor spatial edge and lighting measurement (<0.4ms).
         
-        Returns:
-            occlusion_ratio (0.0 - 1.0)
-            center_occlusion (0.0 - 1.0)
-            lens_status ("CLEAR", "CLOTH_OCCLUDED", "POCKET_DARK", "GLARE", "MOTION_BLUR", "DEFOCUS_BLUR")
-            dark_ratio (0.0 - 1.0)
-            glare_ratio (0.0 - 1.0)
-            mean_brightness (0 - 255)
-            contrast_score (std dev of pixels)
+        Returns pure numerical measurements only:
+            occlusion_ratio (float 0.0 - 1.0)
+            center_occlusion (float 0.0 - 1.0)
+            dark_ratio (float 0.0 - 1.0)
+            glare_ratio (float 0.0 - 1.0)
+            mean_brightness (float 0.0 - 255.0)
+            contrast_score (float std dev of pixels)
         """
         h, w = gray_frame.shape
         mean_brightness = float(np.mean(gray_frame))
@@ -176,25 +170,9 @@ class MotionEngine:
         occlusion_ratio = float(flat_cells / total_cells)
         center_occlusion = float(center_flat_cells / 4.0)
 
-        # 3. Determine Physical Lens Status
-        if dark_ratio > 0.65 or mean_brightness < 18.0:
-            lens_status = "POCKET_DARK"
-        elif glare_ratio > 0.35:
-            lens_status = "GLARE"
-        elif occlusion_ratio >= 0.35 or center_occlusion >= 0.75:
-            lens_status = "CLOTH_OCCLUDED"
-        elif sharpness < 65.0:
-            if speed > 3.0:
-                lens_status = "MOTION_BLUR"
-            else:
-                lens_status = "DEFOCUS_BLUR"
-        else:
-            lens_status = "CLEAR"
-
         return (
             occlusion_ratio,
             center_occlusion,
-            lens_status,
             dark_ratio,
             glare_ratio,
             mean_brightness,
@@ -243,12 +221,11 @@ class MotionEngine:
             (
                 occlusion_ratio,
                 center_occlusion,
-                lens_status,
                 dark_ratio,
                 glare_ratio,
                 mean_brightness,
                 contrast_score,
-            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=0.0)
+            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap)
 
             return MotionMetrics(
                 sharpness=sharpness,
@@ -256,7 +233,6 @@ class MotionEngine:
                 tracked_points_count=len(self.prev_pts) if self.prev_pts is not None else 0,
                 occlusion_ratio=occlusion_ratio,
                 center_occlusion=center_occlusion,
-                lens_status=lens_status,
                 dark_ratio=dark_ratio,
                 glare_ratio=glare_ratio,
                 mean_brightness=mean_brightness,
@@ -295,12 +271,11 @@ class MotionEngine:
             (
                 occlusion_ratio,
                 center_occlusion,
-                lens_status,
                 dark_ratio,
                 glare_ratio,
                 mean_brightness,
                 contrast_score,
-            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=0.0)
+            ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap)
 
             return MotionMetrics(
                 sharpness=sharpness,
@@ -308,7 +283,6 @@ class MotionEngine:
                 tracked_points_count=tracked_count,
                 occlusion_ratio=occlusion_ratio,
                 center_occlusion=center_occlusion,
-                lens_status=lens_status,
                 dark_ratio=dark_ratio,
                 glare_ratio=glare_ratio,
                 mean_brightness=mean_brightness,
@@ -396,12 +370,11 @@ class MotionEngine:
         (
             occlusion_ratio,
             center_occlusion,
-            lens_status,
             dark_ratio,
             glare_ratio,
             mean_brightness,
             contrast_score,
-        ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap, sharpness, speed=speed)
+        ) = self.calculate_occlusion_and_diagnostics(gray, abs_lap)
 
         return MotionMetrics(
             dx=dx,
@@ -415,7 +388,6 @@ class MotionEngine:
             inliers_count=inliers_count,
             occlusion_ratio=occlusion_ratio,
             center_occlusion=center_occlusion,
-            lens_status=lens_status,
             dark_ratio=dark_ratio,
             glare_ratio=glare_ratio,
             mean_brightness=mean_brightness,

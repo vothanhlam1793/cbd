@@ -190,7 +190,8 @@ def get_case_telemetry(case_id: str, db: Session = Depends(get_db)):
             "confidence": round(r.tracking_confidence, 2),
             "occlusion_ratio": round(getattr(r, "occlusion_ratio", 0.0) or 0.0, 3),
             "center_occlusion": round(getattr(r, "center_occlusion", 0.0) or 0.0, 3),
-            "lens_status": getattr(r, "lens_status", "CLEAR") or "CLEAR",
+            "dark_ratio": round(getattr(r, "dark_ratio", 0.0) or 0.0, 3),
+            "glare_ratio": round(getattr(r, "glare_ratio", 0.0) or 0.0, 3),
             "cadence_mean": round(r.cadence_mean, 2),
             "is_periodic": r.is_periodic,
             "dominant_freq_hz": round(r.dominant_freq_hz, 2),
@@ -657,14 +658,13 @@ def _extract_telemetry_window_features(db: Session, case_id: str, center_frame_i
     confs = [r.tracking_confidence for r in rows if r.tracking_confidence is not None]
     occlusions = [r.occlusion_ratio for r in rows if getattr(r, "occlusion_ratio", None) is not None]
     center_occls = [r.center_occlusion for r in rows if getattr(r, "center_occlusion", None) is not None]
-    statuses = [r.lens_status for r in rows if getattr(r, "lens_status", None) is not None]
+    darks = [r.dark_ratio for r in rows if getattr(r, "dark_ratio", None) is not None]
+    glares = [r.glare_ratio for r in rows if getattr(r, "glare_ratio", None) is not None]
     freqs = [r.dominant_freq_hz for r in rows if r.dominant_freq_hz is not None]
     periodics = [1.0 if r.is_periodic else 0.0 for r in rows]
     
     # Calculate Jerk (differential speed)
     jerks = [abs(speeds[i] - speeds[i-1]) for i in range(1, len(speeds))] if len(speeds) > 1 else [0.0]
-
-    dominant_lens_status = max(set(statuses), key=statuses.count) if statuses else "CLEAR"
     
     features = {
         "window_frames": len(rows),
@@ -681,7 +681,8 @@ def _extract_telemetry_window_features(db: Session, case_id: str, center_frame_i
         "mean_occlusion": round(float(np.mean(occlusions)), 3) if occlusions else 0.0,
         "max_occlusion": round(float(np.max(occlusions)), 3) if occlusions else 0.0,
         "mean_center_occlusion": round(float(np.mean(center_occls)), 3) if center_occls else 0.0,
-        "dominant_lens_status": dominant_lens_status,
+        "mean_dark_ratio": round(float(np.mean(darks)), 3) if darks else 0.0,
+        "mean_glare_ratio": round(float(np.mean(glares)), 3) if glares else 0.0,
         "mean_confidence": round(float(np.mean(confs)), 2) if confs else 1.0,
         "mean_cadence_hz": round(float(np.mean(freqs)), 2) if freqs else 0.0,
         "periodic_ratio": round(float(np.mean(periodics)), 2) if periodics else 0.0,
@@ -740,7 +741,9 @@ def get_case_evaluation_summary(case_id: str, db: Session = Depends(get_db)):
                 "sharpness_laplacian": vq.get("sharpness_laplacian", t.sharpness_score),
                 "occlusion_ratio": vq.get("occlusion_ratio", 0.0),
                 "center_occlusion": vq.get("center_occlusion", 0.0),
-                "lens_status": vq.get("lens_status", "CLEAR"),
+                "dark_ratio": vq.get("dark_ratio", 0.0),
+                "glare_ratio": vq.get("glare_ratio", 0.0),
+                "inferred_lens_status": vq.get("inferred_lens_status", "CLEAR"),
                 "dwell_duration_sec": tc.get("dwell_duration_sec", 0.0),
                 "pre_stability_score": tc.get("pre_stability_score", 1.0),
                 "cadence_freq_hz": cg.get("cadence_freq_hz", 0.0),

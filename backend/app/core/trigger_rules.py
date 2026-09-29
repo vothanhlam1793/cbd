@@ -76,7 +76,6 @@ class TriggerEngine:
         predicted_state: str,
         occlusion_ratio: float = 0.0,
         center_occlusion: float = 0.0,
-        lens_status: str = "CLEAR",
         dark_ratio: float = 0.0,
         glare_ratio: float = 0.0,
         mean_brightness: float = 128.0,
@@ -93,6 +92,20 @@ class TriggerEngine:
         def is_cooldown_active(trig_type: str) -> bool:
             last = self.last_trigger_time.get(trig_type, -9999.0)
             return (timestamp_sec - last) < self.cooldown_sec
+
+        # -------------------------------------------------------------
+        # KHỐI 2 INFERRED STATE: Suy luận trạng thái ống kính từ số liệu Khối 1
+        # -------------------------------------------------------------
+        if dark_ratio > 0.65 or mean_brightness < 18.0:
+            inferred_lens_status = "POCKET_DARK"
+        elif glare_ratio > 0.35:
+            inferred_lens_status = "GLARE"
+        elif occlusion_ratio >= 0.35 or center_occlusion >= 0.75:
+            inferred_lens_status = "CLOTH_OCCLUDED"
+        elif sharpness < 65.0:
+            inferred_lens_status = "MOTION_BLUR" if speed > 3.0 else "DEFOCUS_BLUR"
+        else:
+            inferred_lens_status = "CLEAR"
 
         # Standard Rich Metadata Payload for any trigger
         rich_metadata = {
@@ -113,12 +126,12 @@ class TriggerEngine:
                 "sharpness_laplacian": round(sharpness, 1),
                 "occlusion_ratio": round(occlusion_ratio, 3),
                 "center_occlusion": round(center_occlusion, 3),
-                "lens_status": lens_status,
                 "dark_ratio": round(dark_ratio, 3),
                 "glare_ratio": round(glare_ratio, 3),
-                "is_occluded": (occlusion_ratio > self.max_occlusion_ratio) or (lens_status in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"]),
                 "mean_brightness": round(mean_brightness, 1),
                 "contrast_score": round(contrast_score, 1),
+                "inferred_lens_status": inferred_lens_status,
+                "is_occluded": (occlusion_ratio > self.max_occlusion_ratio) or (inferred_lens_status in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"]),
             },
             "temporal_context": {
                 "dwell_duration_sec": round(stable_duration_sec, 2),
@@ -143,7 +156,7 @@ class TriggerEngine:
                 # 3. Không bị xoay đầu giật nhanh (angular_yaw_vel <= max_angular_yaw)
                 # 4. Đạt độ nét tối thiểu (sharpness >= min_sharpness)
                 is_stable_pass = speed < self.spike_speed_threshold
-                is_occlusion_pass = (occlusion_ratio <= self.max_occlusion_ratio) and (center_occlusion < 0.60) and (lens_status not in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"])
+                is_occlusion_pass = (occlusion_ratio <= self.max_occlusion_ratio) and (center_occlusion < 0.60) and (inferred_lens_status not in ["CLOTH_OCCLUDED", "POCKET_DARK", "GLARE"])
                 is_yaw_pass = angular_yaw_vel <= self.max_angular_yaw_vel
                 is_sharpness_pass = sharpness >= self.min_sharpness and confidence >= 0.35
 

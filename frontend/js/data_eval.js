@@ -238,13 +238,13 @@ function renderEvalTriggersTable(triggers) {
       </td>
       <td style="font-family:monospace; font-size:0.72rem; line-height:1.3;">
         v:<b>${(raw.speed_px_f || 0).toFixed(1)}</b> yaw:<b>${(raw.angular_yaw_vel_px_s || 0).toFixed(0)}</b><br>
-        nét:<b>${(raw.sharpness_laplacian || 0).toFixed(0)}</b> che:<b>${((raw.occlusion_ratio || 0) * 100).toFixed(0)}%</b>
-        ${raw.lens_status && raw.lens_status !== "CLEAR" ? `<br><span style="color:var(--accent-yellow); font-weight:700;">${raw.lens_status}</span>` : ""}
+        nét:<b>${(raw.sharpness_laplacian || 0).toFixed(0)}</b> che:<b>${((raw.occlusion_ratio || 0) * 100).toFixed(0)}%</b> (tâm:<b>${((raw.center_occlusion || 0) * 100).toFixed(0)}%</b>)
+        ${raw.inferred_lens_status && raw.inferred_lens_status !== "CLEAR" ? `<br><span style="color:var(--accent-yellow); font-weight:700;">Khối 2: ${raw.inferred_lens_status}</span>` : ""}
       </td>
       <td style="font-family:monospace; font-size:0.72rem; line-height:1.3; color:var(--text-secondary);">
         v̄:<b>${f1s.mean_speed ?? "--"}</b> | σdy:<b>${f1s.std_dy ?? "--"}</b><br>
         jerk:<b>${f1s.mean_jerk ?? "--"}</b> | <b>${f1s.mean_cadence_hz ?? "--"}Hz</b>
-        ${f1s.dominant_lens_status && f1s.dominant_lens_status !== "CLEAR" ? `<br><span style="color:var(--accent-orange);">1s: ${f1s.dominant_lens_status} (${((f1s.mean_occlusion || 0)*100).toFixed(0)}%)</span>` : ""}
+        ${f1s.mean_occlusion !== undefined ? `<br>che 1s:<b>${((f1s.mean_occlusion || 0)*100).toFixed(0)}%</b> (tối:<b>${((f1s.mean_dark_ratio || 0)*100).toFixed(0)}%</b>)` : ""}
       </td>
       <td>
         <span class="meta-badge" id="badge-label-${t.frame_idx}" style="background:${labelBadgeColor}; color:#fff; font-weight:700; font-size:0.72rem;">
